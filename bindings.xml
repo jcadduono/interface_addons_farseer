@@ -1,0 +1,20 @@
+<Bindings>
+	<Binding name="Toggle Targets +" header="FARSEER" category="ADDONS">
+		Farseer_ToggleTargetMode()
+	</Binding>
+	<Binding name="Toggle Targets -" category="ADDONS">
+		Farseer_ToggleTargetModeReverse()
+	</Binding>
+	<Binding name="Set Targets to 1" category="ADDONS">
+		Farseer_SetTargetMode(1)
+	</Binding>
+	<Binding name="Set Targets to 2" category="ADDONS">
+		Farseer_SetTargetMode(2)
+	</Binding>
+	<Binding name="Set Targets to 3" category="ADDONS">
+		Farseer_SetTargetMode(3)
+	</Binding>
+	<Binding name="Set Targets to 4+" category="ADDONS">
+		Farseer_SetTargetMode(4)
+	</Binding>
+</Bindings>

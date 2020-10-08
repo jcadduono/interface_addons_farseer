@@ -1,0 +1,7 @@
+## Interface: 80300
+## Title: Farseer
+## Notes: Farseer is an addon for shamans that simplifies gameplay and maximizes DPS by doing all the decision making for you
+## Author: jcadduono @ curseforge.com or Spy#1955 @ BattleTag
+## SavedVariablesPerCharacter: Farseer
+## Version: 8.3.7-0
+Farseer.lua
