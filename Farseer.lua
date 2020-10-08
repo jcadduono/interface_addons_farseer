@@ -751,7 +751,21 @@ WindShear.cooldown_duration = 12
 ------ Procs
 
 ---- Elemental
-
+local ChainLightning = Ability:Add(188443, false, true)
+ChainLightning.maelstrom_cost = -4
+ChainLightning:AutoAoe(false)
+local EarthShock = Ability:Add(8042, false, true)
+EarthShock.maelstrom_cost = 60
+local FlameShock = Ability:Add(188389, false, true)
+FlameShock.buff_duration = 24
+FlameShock.cooldown_duration = 6
+local LavaBurst = Ability:Add(51505, false, true)
+LavaBurst.cooldown_duration = 8
+LavaBurst.maelstrom_cost = -10
+LavaBurst.requires_charge = true
+LavaBurst:SetVelocity(60)
+local LightningBolt = Ability:Add(188196, false, true)
+LightningBolt.maelstrom_cost = -8
 ------ Talents
 
 ------ Procs
@@ -1012,6 +1026,16 @@ end
 
 -- Start Player API
 
+function Player:Enemies()
+	if self.ability_casting == ChainLightning and self.enemies <= 1 then
+		return 2
+	end
+	if self.ability_casting == LightningBolt and self.enemies > 1 then
+		return 1
+	end
+	return self.enemies
+end
+
 function Player:Health()
 	return self.health
 end
@@ -1206,7 +1230,9 @@ end
 
 -- Start Ability Modifications
 
-
+function ChainLightning:MaelstromCost()
+	return self.maelstrom_cost * min(3, max(1, Player:Enemies()))
+end
 
 -- End Ability Modifications
 
@@ -1246,6 +1272,24 @@ APL[SPEC.ELEMENTAL].main = function(self)
 				UseCooldown(PotionOfUnbridledFury)
 			end
 		end
+	end
+	if FlameShock:Usable() and FlameShock:Down() then
+		return FlameShock
+	end
+	if LavaBurst:Usable() and FlameShock:Remains() > (3 * Player.haste_factor) then
+		return LavaBurst
+	end
+	if EarthShock:Usable() then
+		return EarthShock
+	end
+	if FlameShock:Usable() and FlameShock:Refreshable() then
+		return FlameShock
+	end
+	if ChainLightning:Usable() and Player:Enemies() > 1 then
+		return ChainLightning
+	end
+	if LightningBolt:Usable() and (not LavaBurst:Ready(Player.haste_factor) or FlameShock:Down()) then
+		return LightningBolt
 	end
 end
 
@@ -1557,7 +1601,7 @@ function UI:UpdateCombat()
 	end
 	Player.mana = min(max(Player.mana, 0), Player.mana_max)
 	if Player.spec == SPEC.ELEMENTAL then
-		Player.maelstrom = UnitPower('player', 9)
+		Player.maelstrom = UnitPower('player', 11)
 		if Player.ability_casting then
 			Player.maelstrom = Player.maelstrom - Player.ability_casting:MaelstromCost()
 		end
