@@ -131,6 +131,7 @@ local Player = {
 	mana_regen = 0,
 	maelstrom = 0,
 	maelstrom_max = 100,
+	maelstrom_weapon = 0,
 	moving = false,
 	movement_speed = 100,
 	last_swing_taken = 0,
@@ -454,7 +455,7 @@ function Ability:Ready(seconds)
 	return self:Cooldown() <= (seconds or 0)
 end
 
-function Ability:Usable()
+function Ability:Usable(seconds)
 	if not self.known then
 		return false
 	end
@@ -467,7 +468,7 @@ function Ability:Usable()
 	if self.requires_charge and self:Charges() == 0 then
 		return false
 	end
-	return self:Ready()
+	return self:Ready(seconds)
 end
 
 function Ability:Remains()
@@ -743,6 +744,36 @@ end
 
 -- Shaman Abilities
 ---- Multiple Specializations
+local ChainHeal = Ability:Add(1064, true, true)
+ChainHeal.mana_cost = 30
+ChainHeal.consume_mw = true
+local ChainLightning = Ability:Add(188443, false, true)
+ChainLightning.mana_cost = 1
+ChainLightning.consume_mw = true
+ChainLightning:AutoAoe(false)
+local EarthElemental = Ability:Add(198103)
+EarthElemental.cooldown_duration = 300
+local FlameShock = Ability:Add(188389, false, true)
+FlameShock.buff_duration = 18
+FlameShock.cooldown_duration = 6
+FlameShock.hasted_cooldown = true
+FlameShock.tick_interval = 2
+FlameShock.hasted_ticks = true
+local FlametongueWeapon = Ability:Add(318038, true, true)
+local FrostShock = Ability:Add(196840, false, true)
+FrostShock.buff_duration = 6
+FrostShock.cooldown_duration = 6
+FrostShock.hasted_cooldown = true
+FrostShock:AutoAoe(false)
+local HealingSurge = Ability:Add(8004, true, true)
+HealingSurge.mana_cost = 26
+HealingSurge.consume_mw = true
+local LightningBolt = Ability:Add(188196, false, true)
+LightningBolt.mana_cost = 2
+LightningBolt.consume_mw = true
+local LightningShield = Ability:Add(192106, true, true)
+LightningShield.buff_duration = 3600
+LightningShield.mana_cost = 1.5
 local WindShear = Ability:Add(57994, false, true)
 WindShear.buff_duration = 3
 WindShear.cooldown_duration = 12
@@ -751,31 +782,58 @@ WindShear.cooldown_duration = 12
 ------ Procs
 
 ---- Elemental
-local ChainLightning = Ability:Add(188443, false, true)
-ChainLightning.maelstrom_cost = -4
-ChainLightning:AutoAoe(false)
 local EarthShock = Ability:Add(8042, false, true)
 EarthShock.maelstrom_cost = 60
-local FlameShock = Ability:Add(188389, false, true)
-FlameShock.buff_duration = 24
-FlameShock.cooldown_duration = 6
+local Earthquake = Ability:Add(61882, false, true, 77478)
+Earthquake.maelstrom_cost = 60
+Earthquake:AutoAoe(false)
 local LavaBurst = Ability:Add(51505, false, true)
 LavaBurst.cooldown_duration = 8
 LavaBurst.maelstrom_cost = -10
 LavaBurst.requires_charge = true
 LavaBurst:SetVelocity(60)
-local LightningBolt = Ability:Add(188196, false, true)
-LightningBolt.maelstrom_cost = -8
 ------ Talents
 
 ------ Procs
 
 ---- Enhancement
-
+local CrashLightning = Ability:Add(187874, false, true)
+CrashLightning.cooldown_duration = 9
+CrashLightning.hasted_cooldown = true
+CrashLightning:AutoAoe(true)
+CrashLightning.buff = Ability:Add(187878, true, true)
+CrashLightning.buff.buff_duration = 10
+local FeralSpirit = Ability:Add(51533, true, true)
+FeralSpirit.buff_duration = 15
+FeralSpirit.cooldown_duration = 120
+local LavaLash = Ability:Add(60103, false, true)
+LavaLash.cooldown_duration = 12
+LavaLash.mana_cost = 4
+LavaLash.hasted_cooldown = true
+local Stormstrike = Ability:Add(17364, false, true)
+Stormstrike.cooldown_duration = 7.5
+Stormstrike.mana_cost = 2
+Stormstrike.hasted_cooldown = true
+local WindfuryTotem = Ability:Add(8512, true, false, 327942)
+WindfuryTotem.mana_cost = 12
+local WindfuryWeapon = Ability:Add(33757, true, true)
 ------ Talents
-
+local ForcefulWinds = Ability:Add(262647, true, true, 262652)
+ForcefulWinds.buff_duration = 15
+Hailstorm = Ability:Add(334195, true, true, 334196)
+Hailstorm.buff_duration = 20
+local HotHand = Ability:Add(201900, true, true, 215785)
+HotHand.buff_duration = 15
+local Sundering = Ability:Add(197214, false, true)
+Sundering.cooldown_duration = 40
+Sundering:AutoAoe(false)
 ------ Procs
-
+local GatheringStorms = Ability:Add(198300, true, true)
+GatheringStorms.buff_duration = 12
+local MaelstromWeapon = Ability:Add(187880, true, true, 344179)
+MaelstromWeapon.buff_duration = 30
+local Stormbringer = Ability:Add(201846, true, true)
+Stormbringer.buff_duration = 12
 ---- Restoration
 
 ------ Talents
@@ -985,10 +1043,6 @@ function Azerite:Update()
 	for pid in next, self.essences do
 		self.essences[pid] = nil
 	end
-	if UnitEffectiveLevel('player') < 110 then
-		--print('disabling azerite, player is effectively level', UnitEffectiveLevel('player'))
-		return -- disable all Azerite/Essences for players scaled under 110
-	end
 	for _, loc in next, self.locations do
 		if GetInventoryItemID('player', loc:GetEquipmentSlot()) and C_AzeriteEmpoweredItem.IsAzeriteEmpoweredItem(loc) then
 			for _, slot in next, C_AzeriteEmpoweredItem.GetAllTierInfo(loc) do
@@ -1129,6 +1183,9 @@ function Player:UpdateAbilities()
 		end
 	end
 
+	CrashLightning.buff.known = CrashLightning.known
+	GatheringStorms.known = CrashLightning.known
+
 	abilities.bySpellId = {}
 	abilities.velocity = {}
 	abilities.autoAoe = {}
@@ -1230,8 +1287,34 @@ end
 
 -- Start Ability Modifications
 
+--[[
 function ChainLightning:MaelstromCost()
-	return self.maelstrom_cost * min(3, max(1, Player:Enemies()))
+	return Ability.MaelstromCost(self) * min(3, max(1, Player:Enemies()))
+end
+]]
+
+function MaelstromWeapon:Stack()
+	local stack = Ability.Stack(self)
+	if Player.ability_casting and Player.ability_casting.consume_mw then
+		stack = stack - 5
+	end
+	return max(0, stack)
+end
+
+function FlametongueWeapon:Remains()
+	local _, _, _, _, _, remains, _, id = GetWeaponEnchantInfo()
+	if id ~= 5400 then
+		return 0
+	end
+	return remains / 1000
+end
+
+function WindfuryWeapon:Remains()
+	local _, remains, _, id = GetWeaponEnchantInfo()
+	if id ~= 5401 then
+		return 0
+	end
+	return remains / 1000
 end
 
 -- End Ability Modifications
@@ -1276,19 +1359,28 @@ APL[SPEC.ELEMENTAL].main = function(self)
 	if FlameShock:Usable() and FlameShock:Down() then
 		return FlameShock
 	end
-	if LavaBurst:Usable() and FlameShock:Remains() > (3 * Player.haste_factor) then
+	if Earthquake:Usable() and Player:Enemies() > 1 and Player:Maelstrom() >= 90 then
+		return Earthquake
+	end
+	if EarthShock:Usable() and Player:Maelstrom() >= 90 then
+		return EarthShock
+	end
+	if LavaBurst:Usable(Player.haste_factor) and FlameShock:Remains() > (3 * Player.haste_factor) then
 		return LavaBurst
+	end
+	if Earthquake:Usable() and Player:Enemies() > 1 then
+		return Earthquake
 	end
 	if EarthShock:Usable() then
 		return EarthShock
 	end
-	if FlameShock:Usable() and FlameShock:Refreshable() then
+	if FlameShock:Usable() and FlameShock:Refreshable() and Target.timeToDie > (FlameShock:Remains() + (3 * Player.haste_factor)) then
 		return FlameShock
 	end
 	if ChainLightning:Usable() and Player:Enemies() > 1 then
 		return ChainLightning
 	end
-	if LightningBolt:Usable() and (not LavaBurst:Ready(Player.haste_factor) or FlameShock:Down()) then
+	if LightningBolt:Usable() then
 		return LightningBolt
 	end
 end
@@ -1306,6 +1398,124 @@ APL[SPEC.ENHANCEMENT].main = function(self)
 				UseCooldown(PotionOfUnbridledFury)
 			end
 		end
+		if WindfuryWeapon:Usable() and WindfuryWeapon:Remains() < 300 then
+			UseCooldown(WindfuryWeapon)
+		end
+		if FlametongueWeapon:Usable() and FlametongueWeapon:Remains() < 300 then
+			UseCooldown(FlametongueWeapon)
+		end
+		if WindfuryTotem:Usable() and WindfuryTotem:Down() then
+			UseCooldown(WindfuryTotem)
+		end
+		if LightningShield:Usable() and LightningShield:Remains() < 300 then
+			UseCooldown(LightningShield)
+		end
+		if Hailstorm.known and FrostShock:Usable() and Hailstorm:Stack() >= 5 then
+			return FrostShock
+		end
+		if FlameShock:Usable() then
+			return FlameShock
+		end
+	else
+		if WindfuryWeapon:Usable() and WindfuryWeapon:Down() then
+			UseExtra(WindfuryWeapon)
+		end
+		if FlametongueWeapon:Usable() and FlametongueWeapon:Down() then
+			UseExtra(FlametongueWeapon)
+		end
+		if WindfuryTotem:Usable() and WindfuryTotem:Down() then
+			UseExtra(WindfuryTotem)
+		end
+		if LightningShield:Usable() and LightningShield:Down() then
+			UseExtra(LightningShield)
+		end
+	end
+--[[
+# Executed every time the actor is available.
+actions=bloodlust
+# In-combat potion is before combat ends.
+actions+=/potion,if=expected_combat_length-time<60
+# Interrupt of casts.
+actions+=/wind_shear
+actions+=/auto_attack
+actions+=/windstrike
+actions+=/crash_lightning,if=spell_targets.chain_lightning>1
+actions+=/chain_lightning,if=spell_targets.chain_lightning>1&&buff.maelstrom_weapon.stack>=5
+actions+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5
+actions+=/feral_spirit
+actions+=/earth_elemental
+actions+=/lava_lash
+actions+=/stormstrike
+actions+=/crash_lightning
+actions+=/flame_shock
+actions+=/frost_shock
+]]
+	if Hailstorm.known and FrostShock:Usable() and between(Hailstorm:Remains(), 0.1, Player.gcd * 2) and Hailstorm:Stack() >= 5 then
+		return FrostShock
+	end
+	if CrashLightning:Usable() and Player:Enemies() > 1 and CrashLightning.buff:Down() then
+		return CrashLightning
+	end
+	if ChainLightning:Usable() and Player:Enemies() > 1 and (Player.maelstrom_weapon >= 9 or (Player.maelstrom_weapon >= 5 and MaelstromWeapon:Remains() < Player.gcd * 2)) then
+		return ChainLightning
+	end
+	if LightningBolt:Usable() and (Player.maelstrom_weapon >= 9 or (Player.maelstrom_weapon >= 5 and MaelstromWeapon:Remains() < Player.gcd * 2)) then
+		return LightningBolt
+	end
+	if LavaLash:Usable() and HotHand:Up() then
+		return LavaLash
+	end
+	if Stormstrike:Usable() then
+		return Stormstrike
+	end
+	if FlameShock:Usable() and FlameShock:Down() and (not Hailstorm.known or Hailstorm:Down()) and Target.timeToDie > (FlameShock:Remains() + 8 * Player.haste_factor) then
+		return FlameShock
+	end
+	if LavaLash:Usable() then
+		return LavaLash
+	end
+	if Hailstorm.known and FrostShock:Usable() and Hailstorm:Stack() >= 5 and (Player:Enemies() > 1 or Player.maelstrom_weapon >= 5) then
+		return FrostShock
+	end
+	if Sundering:Usable() then
+		UseCooldown(Sundering)
+	end
+	if FeralSpirit:Usable() then
+		UseCooldown(FeralSpirit)
+	end
+	if Opt.trinket then
+		if Trinket1:Usable() then
+			UseCooldown(Trinket1)
+		elseif Trinket2:Usable() then
+			UseCooldown(Trinket2)
+		end
+	end
+	if EarthElemental:Usable() then
+		UseExtra(EarthElemental)
+	end
+	if CrashLightning:Usable() and CrashLightning.buff:Down() then
+		return CrashLightning
+	end
+	if FlameShock:Usable() and FlameShock:Refreshable() and Target.timeToDie > (FlameShock:Remains() + 8 * Player.haste_factor) then
+		return FlameShock
+	end
+	if FrostShock:Usable() and (not Hailstorm.known or Hailstorm:Up()) then
+		return FrostShock
+	end
+	if ChainLightning:Usable() and Player:Enemies() > 1 and Player.maelstrom_weapon >= 5 then
+		return ChainLightning
+	end
+	if LightningBolt:Usable() and Player.maelstrom_weapon >= 5 then
+		return LightningBolt
+	end
+	if CrashLightning:Usable() then
+		return CrashLightning
+	end
+	if FrostShock:Usable() then
+		return FrostShock
+	end
+	if FlameShock:Usable() then
+		return FlameShock
 	end
 end
 
@@ -1483,16 +1693,16 @@ end
 UI.anchor_points = {
 	blizzard = { -- Blizzard Personal Resource Display (Default)
 		[SPEC.ELEMENTAL] = {
-			['above'] = { 'BOTTOM', 'TOP', 0, 49 },
-			['below'] = { 'TOP', 'BOTTOM', 0, -3 }
+			['above'] = { 'BOTTOM', 'TOP', 0, 36 },
+			['below'] = { 'TOP', 'BOTTOM', 0, -9 }
 		},
 		[SPEC.ENHANCEMENT] = {
-			['above'] = { 'BOTTOM', 'TOP', 0, 49 },
-			['below'] = { 'TOP', 'BOTTOM', 0, -3 }
+			['above'] = { 'BOTTOM', 'TOP', 0, 36 },
+			['below'] = { 'TOP', 'BOTTOM', 0, -9 }
 		},
 		[SPEC.RESTORATION] = {
-			['above'] = { 'BOTTOM', 'TOP', 0, 49 },
-			['below'] = { 'TOP', 'BOTTOM', 0, -3 }
+			['above'] = { 'BOTTOM', 'TOP', 0, 36 },
+			['below'] = { 'TOP', 'BOTTOM', 0, -9 }
 		},
 	},
 	kui = { -- Kui Nameplates
@@ -1534,7 +1744,7 @@ function UI:HookResourceFrame()
 		self.anchor.frame = KuiNameplatesPlayerAnchor
 	else
 		self.anchor.points = self.anchor_points.blizzard
-		self.anchor.frame = NamePlateDriverFrame:GetClassNameplateBar()
+		self.anchor.frame = NamePlateDriverFrame:GetClassNameplateManaBar()
 	end
 	if self.anchor.frame then
 		self.anchor.frame:HookScript('OnHide', self.OnResourceFrameHide)
@@ -1565,14 +1775,17 @@ end
 
 function UI:UpdateDisplay()
 	timer.display = 0
-	local dim
+	local dim, text_tl
 	if Opt.dimmer then
 		dim = not ((not Player.main) or
 		           (Player.main.spellId and IsUsableSpell(Player.main.spellId)) or
 		           (Player.main.itemId and IsUsableItem(Player.main.itemId)))
 	end
-
+	if MaelstromWeapon.known then
+		text_tl = Player.maelstrom_weapon
+	end
 	farseerPanel.dimmer:SetShown(dim)
+	farseerPanel.text.tl:SetText(text_tl)
 	--farseerPanel.text.bl:SetText(format('%.1fs', Target.timeToDie))
 end
 
@@ -1606,6 +1819,8 @@ function UI:UpdateCombat()
 			Player.maelstrom = Player.maelstrom - Player.ability_casting:MaelstromCost()
 		end
 		Player.maelstrom = min(max(Player.maelstrom, 0), Player.maelstrom_max)
+	elseif Player.spec == SPEC.ENHANCEMENT then
+		Player.maelstrom_weapon = MaelstromWeapon:Stack()
 	end
 	speed, max_speed = GetUnitSpeed('player')
 	Player.moving = speed ~= 0
@@ -1672,8 +1887,8 @@ function events:ADDON_LOADED(name)
 			print('It looks like this is your first time running ' .. name .. ', why don\'t you take some time to familiarize yourself with the commands?')
 			print('Type |cFFFFD000' .. SLASH_Farseer1 .. '|r for a list of commands.')
 		end
-		if UnitLevel('player') < 110 then
-			print('[|cFFFFD000Warning|r] ' .. name .. ' is not designed for players under level 110, and almost certainly will not operate properly!')
+		if UnitLevel('player') < 10 then
+			print('[|cFFFFD000Warning|r] ' .. name .. ' is not designed for players under level 10, and almost certainly will not operate properly!')
 		end
 		InitOpts()
 		Azerite:Init()
@@ -1752,6 +1967,9 @@ function events:COMBAT_LOG_EVENT_UNFILTERED()
 			farseerPreviousPanel.border:SetTexture('Interface\\AddOns\\Farseer\\border.blp')
 			farseerPreviousPanel.icon:SetTexture(ability.icon)
 			farseerPreviousPanel:Show()
+		end
+		if ability == LightningBolt and Player.enemies > 1 then
+			Player:SetTargetMode(1)
 		end
 		return
 	end
