@@ -803,7 +803,7 @@ CrashLightning.hasted_cooldown = true
 CrashLightning:AutoAoe(true)
 CrashLightning.buff = Ability:Add(187878, true, true)
 CrashLightning.buff.buff_duration = 10
-local FeralSpirit = Ability:Add(51533, true, true)
+local FeralSpirit = Ability:Add(51533, true, true, 333957)
 FeralSpirit.buff_duration = 15
 FeralSpirit.cooldown_duration = 120
 local LavaLash = Ability:Add(60103, false, true)
@@ -1386,6 +1386,9 @@ APL[SPEC.ELEMENTAL].main = function(self)
 end
 
 APL[SPEC.ENHANCEMENT].main = function(self)
+	if Player:HealthPct() < 60 and Player.maelstrom_weapon >= 5 and HealingSurge:Usable() then
+		UseExtra(HealingSurge)
+	end
 	if Player:TimeInCombat() == 0 then
 		if not Player:InArenaOrBattleground() then
 			if Opt.pot and GreaterFlaskOfTheCurrents:Usable() and GreaterFlaskOfTheCurrents.buff:Remains() < 300 then
@@ -1410,10 +1413,20 @@ APL[SPEC.ENHANCEMENT].main = function(self)
 		if LightningShield:Usable() and LightningShield:Remains() < 300 then
 			UseCooldown(LightningShield)
 		end
-		if Hailstorm.known and FrostShock:Usable() and Hailstorm:Stack() >= 5 then
-			return FrostShock
+		if Hailstorm.known then
+			if Hailstorm.known and FrostShock:Usable() and Hailstorm:Stack() >= 5 then
+				return FrostShock
+			end
+			if Player.maelstrom_weapon >= 5 then
+				if ChainLightning:Usable() and Player:Enemies() > 1 then
+					return ChainLightning
+				end
+				if LightningBolt:Usable() then
+					return LightningBolt
+				end
+			end
 		end
-		if FlameShock:Usable() then
+		if FlameShock:Usable() and (not Hailstorm.known or Hailstorm:Stack() <= 3) then
 			return FlameShock
 		end
 	else
@@ -1450,11 +1463,19 @@ actions+=/crash_lightning
 actions+=/flame_shock
 actions+=/frost_shock
 ]]
-	if Hailstorm.known and FrostShock:Usable() and between(Hailstorm:Remains(), 0.1, Player.gcd * 2) and Hailstorm:Stack() >= 5 then
-		return FrostShock
+	if not FeralSpirit.known or FeralSpirit:Remains() > 6 then
+		if BloodOfTheEnemy:Usable() then
+			UseCooldown(BloodOfTheEnemy)
+		elseif Opt.trinket then
+			if Trinket1:Usable() then
+				UseCooldown(Trinket1)
+			elseif Trinket2:Usable() then
+				UseCooldown(Trinket2)
+			end
+		end
 	end
-	if CrashLightning:Usable() and Player:Enemies() > 1 and CrashLightning.buff:Down() then
-		return CrashLightning
+	if Hailstorm.known and FrostShock:Usable() and Hailstorm:Stack() >= 5 and (between(Hailstorm:Remains(), 0.1, Player.gcd * 2) or Player.maelstrom_weapon >= 9) then
+		return FrostShock
 	end
 	if ChainLightning:Usable() and Player:Enemies() > 1 and (Player.maelstrom_weapon >= 9 or (Player.maelstrom_weapon >= 5 and MaelstromWeapon:Remains() < Player.gcd * 2)) then
 		return ChainLightning
@@ -1462,41 +1483,46 @@ actions+=/frost_shock
 	if LightningBolt:Usable() and (Player.maelstrom_weapon >= 9 or (Player.maelstrom_weapon >= 5 and MaelstromWeapon:Remains() < Player.gcd * 2)) then
 		return LightningBolt
 	end
-	if LavaLash:Usable() and HotHand:Up() then
+	if CrashLightning:Usable() and Player:Enemies() > 1 and CrashLightning.buff:Down() then
+		return CrashLightning
+	end
+	if HotHand.known and LavaLash:Usable() and HotHand:Up() then
 		return LavaLash
 	end
 	if Stormstrike:Usable() then
 		return Stormstrike
 	end
-	if FlameShock:Usable() and FlameShock:Down() and (not Hailstorm.known or Hailstorm:Down()) and Target.timeToDie > (FlameShock:Remains() + 8 * Player.haste_factor) then
+	if Hailstorm.known and FrostShock:Usable() and Hailstorm:Stack() >= 5 and (Player:Enemies() > 1 or Player.maelstrom_weapon >= 5) then
+		return FrostShock
+	end
+	if Sundering:Usable() and Player:Enemies() > 1 then
+		UseCooldown(Sundering)
+	end
+	if LavaLash:Usable() and Player:Enemies() > 1 and CrashLightning.buff:Up() then
+		return LavaLash
+	end
+	if FlameShock:Usable() and FlameShock:Down() and (not Hailstorm.known or (Hailstorm:Stack() <= 3 and Player:Enemies() == 1)) and Target.timeToDie > (FlameShock:Remains() + 8 * Player.haste_factor) then
 		return FlameShock
 	end
 	if LavaLash:Usable() then
 		return LavaLash
 	end
-	if Hailstorm.known and FrostShock:Usable() and Hailstorm:Stack() >= 5 and (Player:Enemies() > 1 or Player.maelstrom_weapon >= 5) then
-		return FrostShock
-	end
 	if Sundering:Usable() then
 		UseCooldown(Sundering)
-	end
-	if FeralSpirit:Usable() then
+	elseif TheUnboundForce:Usable() and (RecklessForce:Up() or RecklessForce.counter:Stack() < 4) then
+		UseCooldown(TheUnboundForce)
+	elseif GuardianOfAzeroth:Usable() then
+		UseCooldown(GuardianOfAzeroth)
+	elseif WorldveinResonance:Usable() and Lifeblood:Stack() < 4 then
+		UseCooldown(WorldveinResonance)
+	elseif FocusedAzeriteBeam:Usable() then
+		UseCooldown(FocusedAzeriteBeam)
+	elseif PurifyingBlast:Usable() then
+		UseCooldown(PurifyingBlast)
+	elseif FeralSpirit:Usable() then
 		UseCooldown(FeralSpirit)
 	end
-	if Opt.trinket then
-		if Trinket1:Usable() then
-			UseCooldown(Trinket1)
-		elseif Trinket2:Usable() then
-			UseCooldown(Trinket2)
-		end
-	end
-	if EarthElemental:Usable() then
-		UseExtra(EarthElemental)
-	end
-	if CrashLightning:Usable() and CrashLightning.buff:Down() then
-		return CrashLightning
-	end
-	if FlameShock:Usable() and FlameShock:Refreshable() and Target.timeToDie > (FlameShock:Remains() + 8 * Player.haste_factor) then
+	if FlameShock:Usable() and FlameShock:Refreshable() and (not Hailstorm.known or (Hailstorm:Stack() <= 3 and Player:Enemies() == 1)) and Target.timeToDie > (FlameShock:Remains() + 8 * Player.haste_factor) then
 		return FlameShock
 	end
 	if FrostShock:Usable() and (not Hailstorm.known or Hailstorm:Up()) then
@@ -1508,14 +1534,31 @@ actions+=/frost_shock
 	if LightningBolt:Usable() and Player.maelstrom_weapon >= 5 then
 		return LightningBolt
 	end
+	if CrashLightning:Usable() and Player:Enemies() > 1 then
+		return CrashLightning
+	end
+	if EarthElemental:Usable() then
+		UseExtra(EarthElemental)
+	end
+	if ReapingFlames:Usable() then
+		return ReapingFlames
+	end
+	if ConcentratedFlame:Usable() and ConcentratedFlame.dot:Down() then
+		return ConcentratedFlame
+	end
+	if Stormstrike:Usable(Player.haste_factor) then
+		return Stormstrike
+	end
 	if CrashLightning:Usable() then
 		return CrashLightning
 	end
-	if FrostShock:Usable() then
-		return FrostShock
-	end
-	if FlameShock:Usable() then
-		return FlameShock
+	if not Hailstorm.known or Player.maelstrom_weapon <= 3 then
+		if FrostShock:Usable() then
+			return FrostShock
+		end
+		if FlameShock:Usable() then
+			return FlameShock
+		end
 	end
 end
 
