@@ -1495,7 +1495,7 @@ actions+=/frost_shock
 	if Hailstorm.known and FrostShock:Usable() and Hailstorm:Stack() >= 5 and (Player:Enemies() > 1 or Player.maelstrom_weapon >= 5) then
 		return FrostShock
 	end
-	if Sundering:Usable() and Player:Enemies() > 1 then
+	if Sundering:Usable() and Player:Enemies() > 1 and (not BloodOfTheEnemy.known or not BloodOfTheEnemy:Ready(10)) then
 		UseCooldown(Sundering)
 	end
 	if LavaLash:Usable() and Player:Enemies() > 1 and CrashLightning.buff:Up() then
@@ -1507,7 +1507,7 @@ actions+=/frost_shock
 	if LavaLash:Usable() then
 		return LavaLash
 	end
-	if Sundering:Usable() then
+	if Sundering:Usable() and (not BloodOfTheEnemy.known or not BloodOfTheEnemy:Ready(10)) then
 		UseCooldown(Sundering)
 	elseif TheUnboundForce:Usable() and (RecklessForce:Up() or RecklessForce.counter:Stack() < 4) then
 		UseCooldown(TheUnboundForce)
@@ -1537,7 +1537,7 @@ actions+=/frost_shock
 	if CrashLightning:Usable() and Player:Enemies() > 1 then
 		return CrashLightning
 	end
-	if EarthElemental:Usable() then
+	if EarthElemental:Usable() and BloodOfTheEnemy:Down() and FeralSpirit:Down() then
 		UseExtra(EarthElemental)
 	end
 	if ReapingFlames:Usable() then
