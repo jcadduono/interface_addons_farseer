@@ -1390,6 +1390,19 @@ APL[SPEC.ENHANCEMENT].main = function(self)
 		UseExtra(HealingSurge)
 	end
 	if Player:TimeInCombat() == 0 then
+--[[
+actions.precombat=flask
+actions.precombat+=/food
+actions.precombat+=/augmentation
+actions.precombat+=/windfury_weapon
+actions.precombat+=/flametongue_weapon
+actions.precombat+=/lightning_shield
+actions.precombat+=/stormkeeper,if=talent.stormkeeper.enabled
+actions.precombat+=/windfury_totem
+actions.precombat+=/potion
+# Snapshot raid buffed stats before combat begins and pre-potting is done.
+actions.precombat+=/snapshot_stats
+]]
 		if not Player:InArenaOrBattleground() then
 			if Opt.pot and GreaterFlaskOfTheCurrents:Usable() and GreaterFlaskOfTheCurrents.buff:Remains() < 300 then
 				UseCooldown(GreaterFlaskOfTheCurrents)
@@ -1444,24 +1457,43 @@ APL[SPEC.ENHANCEMENT].main = function(self)
 		end
 	end
 --[[
-# Executed every time the actor is available.
 actions=bloodlust
-# In-combat potion is before combat ends.
-actions+=/potion,if=expected_combat_length-time<60
-# Interrupt of casts.
 actions+=/wind_shear
 actions+=/auto_attack
+actions+=/potion,if=expected_combat_length-time<60
+actions+=/blood_of_the_enemy,if=buff.feral_spirit.remains>6
+actions+=/use_items,if=buff.feral_spirit.remains>6
+actions+=/frost_shock,if=talent.hailstorm.enabled&buff.hailstorm.stack>=5&(buff.hailstorm.remains<gcd*2|buff.maelstrom_weapon.stack>=9)
+actions+=/chain_lightning,if=active_enemies>1&(buff.maelstrom_weapon.stack>=9|(buff.maelstrom_weapon.stack>=5&buff.maelstrom_weapon.remains<gcd*2))
+actions+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=9|(buff.maelstrom_weapon.stack>=5&buff.maelstrom_weapon.remains<gcd*2)
 actions+=/windstrike
-actions+=/crash_lightning,if=spell_targets.chain_lightning>1
-actions+=/chain_lightning,if=spell_targets.chain_lightning>1&&buff.maelstrom_weapon.stack>=5
-actions+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5
-actions+=/feral_spirit
-actions+=/earth_elemental
-actions+=/lava_lash
+actions+=/crash_lightning,if=active_enemies>1&buff.crash_lightning.down
+actions+=/lava_lash,if=talent.hot_hand.enabled&buff.hot_hand.up
 actions+=/stormstrike
+actions+=/frost_shock,if=talent.hailstorm.enabled&buff.hailstorm.stack>=5&(active_enemies>1|buff.maelstrom_weapon.stack>=5)
+actions+=/sundering,if=active_enemies>1&(!essence.blood_of_the_enemy.major|cooldown.blood_of_the_enemy.remains>10)
+actions+=/lava_lash,if=active_enemies>1&buff.crash_lightning.up
+actions+=/flame_shock,if=!remains&(!talent.hailstorm.enabled|(buff.hailstorm.stack<=3&active_enemies=1))&target.time_to_die>(remains+8*spell_haste)
+actions+=/lava_lash
+actions+=/sundering,if=!essence.blood_of_the_enemy.major|cooldown.blood_of_the_enemy.remains>10
+actions+=/the_unbound_force,if=buff.reckless_force.up|buff.reckless_force_counter.stack<4
+actions+=/guardian_of_azeroth
+actions+=/worldvein_resonance,if=buff.lifeblood.stack<4
+actions+=/focused_azerite_beam
+actions+=/purifying_blast
+actions+=/feral_spirit
+actions+=/flame_shock,if=refreshable&(!talent.hailstorm.enabled|(buff.hailstorm.stack<=3&active_enemies=1))&target.time_to_die>(remains+8*spell_haste)
+actions+=/frost_shock,if=!talent.hailstorm.enabled|buff.hailstorm.up
+actions+=/chain_lightning,if=buff.maelstrom_weapon.stack>=5&active_enemies>1
+actions+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5
+actions+=/crash_lightning,if=active_enemies>1
+actions+=/earth_elemental,if=buff.blood_of_the_enemy.down&buff.feral_spirit.down
+actions+=/reaping_flames
+actions+=/concentrated_flame,if=!dot.concentrated_flame_burn.remains
 actions+=/crash_lightning
-actions+=/flame_shock
-actions+=/frost_shock
+actions+=/frost_shock,if=buff.maelstrom_weapon.stack<=3
+actions+=/flame_shock,if=buff.maelstrom_weapon.stack<=3
+actions+=/windfury_totem,if=buff.windfury_totem.remains<30
 ]]
 	if not FeralSpirit.known or FeralSpirit:Remains() > 6 then
 		if BloodOfTheEnemy:Usable() then
