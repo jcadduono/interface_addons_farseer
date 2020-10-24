@@ -818,6 +818,9 @@ local WindfuryTotem = Ability:Add(8512, true, false, 327942)
 WindfuryTotem.mana_cost = 12
 local WindfuryWeapon = Ability:Add(33757, true, true)
 ------ Talents
+local Ascendance = Ability:Add(114051, true, true)
+Ascendance.buff_duration = 15
+Ascendance.cooldown_duration = 180
 local ForcefulWinds = Ability:Add(262647, true, true, 262652)
 ForcefulWinds.buff_duration = 15
 Hailstorm = Ability:Add(334195, true, true, 334196)
@@ -827,6 +830,10 @@ HotHand.buff_duration = 15
 local Sundering = Ability:Add(197214, false, true)
 Sundering.cooldown_duration = 40
 Sundering:AutoAoe(false)
+local Windstrike = Ability:Add(115356, false, true)
+Windstrike.cooldown_duration = 3.1
+Windstrike.mana_cost = 2
+Windstrike.hasted_cooldown = true
 ------ Procs
 local GatheringStorms = Ability:Add(198300, true, true)
 GatheringStorms.buff_duration = 12
@@ -1185,6 +1192,7 @@ function Player:UpdateAbilities()
 
 	CrashLightning.buff.known = CrashLightning.known
 	GatheringStorms.known = CrashLightning.known
+	Windstrike.known = Ascendance.known
 
 	abilities.bySpellId = {}
 	abilities.velocity = {}
@@ -1317,6 +1325,28 @@ function WindfuryWeapon:Remains()
 	return remains / 1000
 end
 
+function WindfuryTotem:Remains()
+	local remains = Ability.Remains(self)
+	if remains == 0 then
+		return 0
+	end
+	local _, i, start, duration, icon
+	for i = 1, 4 do
+		_, _, start, duration, icon = GetTotemInfo(i)
+		if icon and icon == self.icon then
+			return max(0, duration - (Player.ctime - start))
+		end
+	end
+	return remains
+end
+
+function Windstrike:Usable()
+	if not Ability.Usable(self) or Ascendance:Down() then
+		return false
+	end
+	return true
+end
+
 -- End Ability Modifications
 
 local function UseCooldown(ability, overwrite)
@@ -1420,7 +1450,7 @@ actions.precombat+=/snapshot_stats
 		if FlametongueWeapon:Usable() and FlametongueWeapon:Remains() < 300 then
 			UseCooldown(FlametongueWeapon)
 		end
-		if WindfuryTotem:Usable() and WindfuryTotem:Down() then
+		if WindfuryTotem:Usable() and WindfuryTotem:Remains() < 30 then
 			UseCooldown(WindfuryTotem)
 		end
 		if LightningShield:Usable() and LightningShield:Remains() < 300 then
@@ -1461,21 +1491,19 @@ actions=bloodlust
 actions+=/wind_shear
 actions+=/auto_attack
 actions+=/potion,if=expected_combat_length-time<60
-actions+=/blood_of_the_enemy,if=buff.feral_spirit.remains>6
+actions+=/blood_of_the_enemy,if=buff.feral_spirit.remains>6|buff.ascendance.remains>6
 actions+=/use_items,if=buff.feral_spirit.remains>6
 actions+=/frost_shock,if=talent.hailstorm.enabled&buff.hailstorm.stack>=5&(buff.hailstorm.remains<gcd*2|buff.maelstrom_weapon.stack>=9)
 actions+=/chain_lightning,if=active_enemies>1&(buff.maelstrom_weapon.stack>=9|(buff.maelstrom_weapon.stack>=5&buff.maelstrom_weapon.remains<gcd*2))
 actions+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=9|(buff.maelstrom_weapon.stack>=5&buff.maelstrom_weapon.remains<gcd*2)
-actions+=/windstrike
+actions+=/frost_shock,if=active_enemies>1&talent.hailstorm.enabled&buff.hailstorm.stack>=5
+actions+=/sundering,if=debuff.blood_of_the_enemy.up
 actions+=/crash_lightning,if=active_enemies>1&buff.crash_lightning.down
-actions+=/lava_lash,if=talent.hot_hand.enabled&buff.hot_hand.up
+actions+=/windstrike
 actions+=/stormstrike
-actions+=/frost_shock,if=talent.hailstorm.enabled&buff.hailstorm.stack>=5&(active_enemies>1|buff.maelstrom_weapon.stack>=5)
-actions+=/sundering,if=active_enemies>1&(!essence.blood_of_the_enemy.major|cooldown.blood_of_the_enemy.remains>10)
-actions+=/lava_lash,if=active_enemies>1&buff.crash_lightning.up
-actions+=/flame_shock,if=!remains&(!talent.hailstorm.enabled|(buff.hailstorm.stack<=3&active_enemies=1))&target.time_to_die>(remains+8*spell_haste)
 actions+=/lava_lash
-actions+=/sundering,if=!essence.blood_of_the_enemy.major|cooldown.blood_of_the_enemy.remains>10
+actions+=/flame_shock,if=!remains&(!talent.hailstorm.enabled|(buff.hailstorm.stack<=3&active_enemies=1))&target.time_to_die>(remains+8*spell_haste)
+actions+=/sundering,if=!essence.blood_of_the_enemy.major|cooldown.blood_of_the_enemy.remains>15
 actions+=/the_unbound_force,if=buff.reckless_force.up|buff.reckless_force_counter.stack<4
 actions+=/guardian_of_azeroth
 actions+=/worldvein_resonance,if=buff.lifeblood.stack<4
@@ -1484,18 +1512,18 @@ actions+=/purifying_blast
 actions+=/feral_spirit
 actions+=/flame_shock,if=refreshable&(!talent.hailstorm.enabled|(buff.hailstorm.stack<=3&active_enemies=1))&target.time_to_die>(remains+8*spell_haste)
 actions+=/frost_shock,if=!talent.hailstorm.enabled|buff.hailstorm.up
-actions+=/chain_lightning,if=buff.maelstrom_weapon.stack>=5&active_enemies>1
-actions+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5
+actions+=/chain_lightning,if=buff.maelstrom_weapon.stack>=5&active_enemies>1&(!talent.hailstorm.enabled|buff.hailstorm.stack<5)
+actions+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&(!talent.hailstorm.enabled|buff.hailstorm.stack<5)
 actions+=/crash_lightning,if=active_enemies>1
 actions+=/earth_elemental,if=buff.blood_of_the_enemy.down&buff.feral_spirit.down
 actions+=/reaping_flames
 actions+=/concentrated_flame,if=!dot.concentrated_flame_burn.remains
 actions+=/crash_lightning
-actions+=/frost_shock,if=buff.maelstrom_weapon.stack<=3
-actions+=/flame_shock,if=buff.maelstrom_weapon.stack<=3
+actions+=/frost_shock
+actions+=/flame_shock
 actions+=/windfury_totem,if=buff.windfury_totem.remains<30
 ]]
-	if not FeralSpirit.known or FeralSpirit:Remains() > 6 then
+	if (not FeralSpirit.known and not Ascendance.known) or FeralSpirit:Remains() > 6 or Ascendance:Remains() > 6 then
 		if BloodOfTheEnemy:Usable() then
 			UseCooldown(BloodOfTheEnemy)
 		elseif Opt.trinket then
@@ -1509,37 +1537,36 @@ actions+=/windfury_totem,if=buff.windfury_totem.remains<30
 	if Hailstorm.known and FrostShock:Usable() and Hailstorm:Stack() >= 5 and (between(Hailstorm:Remains(), 0.1, Player.gcd * 2) or Player.maelstrom_weapon >= 9) then
 		return FrostShock
 	end
-	if ChainLightning:Usable() and Player:Enemies() > 1 and (Player.maelstrom_weapon >= 9 or (Player.maelstrom_weapon >= 5 and MaelstromWeapon:Remains() < Player.gcd * 2)) then
-		return ChainLightning
+	if (Player.maelstrom_weapon >= 9 or (Player.maelstrom_weapon >= 5 and MaelstromWeapon:Remains() < Player.gcd * 2)) then
+		if ChainLightning:Usable() and Player:Enemies() > 1 then
+			return ChainLightning
+		end
+		if LightningBolt:Usable() then
+			return LightningBolt
+		end
 	end
-	if LightningBolt:Usable() and (Player.maelstrom_weapon >= 9 or (Player.maelstrom_weapon >= 5 and MaelstromWeapon:Remains() < Player.gcd * 2)) then
-		return LightningBolt
+	if Hailstorm.known and FrostShock:Usable() and Player:Enemies() > 1 and Hailstorm:Stack() >= 5 then
+		return FrostShock
+	end
+	if BloodOfTheEnemy.known and Sundering:Usable() and (BloodOfTheEnemy:Up() or BloodOfTheEnemy.buff:Up()) then
+		UseCooldown(Sundering)
 	end
 	if CrashLightning:Usable() and Player:Enemies() > 1 and CrashLightning.buff:Down() then
 		return CrashLightning
 	end
-	if HotHand.known and LavaLash:Usable() and HotHand:Up() then
-		return LavaLash
+	if Windstrike:Usable() then
+		return Windstrike
 	end
 	if Stormstrike:Usable() then
 		return Stormstrike
 	end
-	if Hailstorm.known and FrostShock:Usable() and Hailstorm:Stack() >= 5 and (Player:Enemies() > 1 or Player.maelstrom_weapon >= 5) then
-		return FrostShock
-	end
-	if Sundering:Usable() and Player:Enemies() > 1 and (not BloodOfTheEnemy.known or not BloodOfTheEnemy:Ready(10)) then
-		UseCooldown(Sundering)
-	end
-	if LavaLash:Usable() and Player:Enemies() > 1 and CrashLightning.buff:Up() then
+	if LavaLash:Usable() then
 		return LavaLash
 	end
 	if FlameShock:Usable() and FlameShock:Down() and (not Hailstorm.known or (Hailstorm:Stack() <= 3 and Player:Enemies() == 1)) and Target.timeToDie > (FlameShock:Remains() + 8 * Player.haste_factor) then
 		return FlameShock
 	end
-	if LavaLash:Usable() then
-		return LavaLash
-	end
-	if Sundering:Usable() and (not BloodOfTheEnemy.known or not BloodOfTheEnemy:Ready(10)) then
+	if Sundering:Usable() and (not BloodOfTheEnemy.known or not BloodOfTheEnemy:Ready(15)) then
 		UseCooldown(Sundering)
 	elseif TheUnboundForce:Usable() and (RecklessForce:Up() or RecklessForce.counter:Stack() < 4) then
 		UseCooldown(TheUnboundForce)
@@ -1560,11 +1587,13 @@ actions+=/windfury_totem,if=buff.windfury_totem.remains<30
 	if FrostShock:Usable() and (not Hailstorm.known or Hailstorm:Up()) then
 		return FrostShock
 	end
-	if ChainLightning:Usable() and Player:Enemies() > 1 and Player.maelstrom_weapon >= 5 then
-		return ChainLightning
-	end
-	if LightningBolt:Usable() and Player.maelstrom_weapon >= 5 then
-		return LightningBolt
+	if Player.maelstrom_weapon >= 5 and (not Hailstorm.known or Hailstorm:Stack() < 5) then
+		if ChainLightning:Usable() and Player:Enemies() > 1 then
+			return ChainLightning
+		end
+		if LightningBolt:Usable() then
+			return LightningBolt
+		end
 	end
 	if CrashLightning:Usable() and Player:Enemies() > 1 then
 		return CrashLightning
@@ -1584,13 +1613,14 @@ actions+=/windfury_totem,if=buff.windfury_totem.remains<30
 	if CrashLightning:Usable() then
 		return CrashLightning
 	end
-	if not Hailstorm.known or Player.maelstrom_weapon <= 3 then
-		if FrostShock:Usable() then
-			return FrostShock
-		end
-		if FlameShock:Usable() then
-			return FlameShock
-		end
+	if FrostShock:Usable() then
+		return FrostShock
+	end
+	if FlameShock:Usable() then
+		return FlameShock
+	end
+	if WindfuryTotem:Usable() and WindfuryTotem:Remains() < 30 then
+		UseExtra(WindfuryTotem)
 	end
 end
 
