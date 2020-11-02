@@ -756,6 +756,7 @@ EarthElemental.cooldown_duration = 300
 local FlameShock = Ability:Add(188389, false, true)
 FlameShock.buff_duration = 18
 FlameShock.cooldown_duration = 6
+FlameShock.mana_cost = 1.5
 FlameShock.hasted_cooldown = true
 FlameShock.tick_interval = 2
 FlameShock.hasted_ticks = true
@@ -763,10 +764,11 @@ local FlametongueWeapon = Ability:Add(318038, true, true)
 local FrostShock = Ability:Add(196840, false, true)
 FrostShock.buff_duration = 6
 FrostShock.cooldown_duration = 6
+FrostShock.mana_cost = 1
 FrostShock.hasted_cooldown = true
 FrostShock:AutoAoe(false)
 local HealingSurge = Ability:Add(8004, true, true)
-HealingSurge.mana_cost = 26
+HealingSurge.mana_cost = 24
 HealingSurge.consume_mw = true
 local LightningBolt = Ability:Add(188196, false, true)
 LightningBolt.mana_cost = 2
@@ -802,6 +804,7 @@ LavaBurst:SetVelocity(60)
 local CrashLightning = Ability:Add(187874, false, true)
 CrashLightning.cooldown_duration = 9
 CrashLightning.hasted_cooldown = true
+CrashLightning.mana_cost = 5.5
 CrashLightning:AutoAoe(true)
 CrashLightning.buff = Ability:Add(187878, true, true)
 CrashLightning.buff.buff_duration = 10
@@ -825,7 +828,7 @@ Ascendance.buff_duration = 15
 Ascendance.cooldown_duration = 180
 local ForcefulWinds = Ability:Add(262647, true, true, 262652)
 ForcefulWinds.buff_duration = 15
-Hailstorm = Ability:Add(334195, true, true, 334196)
+local Hailstorm = Ability:Add(334195, true, true, 334196)
 Hailstorm.buff_duration = 20
 local HotHand = Ability:Add(201900, true, true, 215785)
 HotHand.buff_duration = 15
@@ -833,6 +836,7 @@ local LashingFlames = Ability:Add(334046, true, true, 334168)
 LashingFlames.buff_duration = 12
 local Sundering = Ability:Add(197214, false, true)
 Sundering.cooldown_duration = 40
+Sundering.mana_cost = 6
 Sundering:AutoAoe(false)
 local Windstrike = Ability:Add(115356, false, true)
 Windstrike.cooldown_duration = 3.1
@@ -1477,12 +1481,6 @@ actions.precombat+=/snapshot_stats
 		if FlametongueWeapon:Usable() and FlametongueWeapon:Down() then
 			UseExtra(FlametongueWeapon)
 		end
-		if WindfuryTotem:Usable() and WindfuryTotem:Down() then
-			UseExtra(WindfuryTotem)
-		end
-		if LightningShield:Usable() and LightningShield:Down() then
-			UseExtra(LightningShield)
-		end
 	end
 --[[
 actions=bloodlust
@@ -1520,6 +1518,7 @@ actions+=/earth_elemental,if=buff.blood_of_the_enemy.down&buff.feral_spirit.down
 actions+=/reaping_flames
 actions+=/concentrated_flame,if=!dot.concentrated_flame_burn.remains
 actions+=/crash_lightning
+actions+=/flame_shock,if=talent.lashing_flames.enabled&remains<(8*spell_haste)&target.time_to_die>(remains+4*spell_haste)
 actions+=/frost_shock
 actions+=/flame_shock
 actions+=/windfury_totem,if=buff.windfury_totem.remains<30
@@ -1578,7 +1577,7 @@ actions+=/windfury_totem,if=buff.windfury_totem.remains<30
 		UseCooldown(FocusedAzeriteBeam)
 	elseif PurifyingBlast:Usable() then
 		UseCooldown(PurifyingBlast)
-	elseif FeralSpirit:Usable() then
+	elseif FeralSpirit:Usable() and (not BloodOfTheEnemy.known or BloodOfTheEnemy:Ready(5)) then
 		UseCooldown(FeralSpirit)
 	end
 	if FlameShock:Usable() and FlameShock:Refreshable() and (not Hailstorm.known or (Player:Enemies() == 1 and (LashingFlames.known or Hailstorm:Stack() <= 3))) and Target.timeToDie > (FlameShock:Remains() + 8 * Player.haste_factor) then
@@ -1594,7 +1593,7 @@ actions+=/windfury_totem,if=buff.windfury_totem.remains<30
 	if CrashLightning:Usable() and Player:Enemies() > 1 then
 		return CrashLightning
 	end
-	if EarthElemental:Usable() and BloodOfTheEnemy:Down() and FeralSpirit:Down() then
+	if EarthElemental:Usable() and BloodOfTheEnemy:Down() and FeralSpirit:Down() and Player:UnderAttack() then
 		UseExtra(EarthElemental)
 	end
 	if ReapingFlames:Usable() then
@@ -1609,14 +1608,29 @@ actions+=/windfury_totem,if=buff.windfury_totem.remains<30
 	if CrashLightning:Usable() then
 		return CrashLightning
 	end
+	if LashingFlames.known and FlameShock:Usable() and FlameShock:Remains() < (8 * Player.haste_factor) and Target.timeToDie > (FlameShock:Remains() + 4 * Player.haste_factor) then
+		return FlameShock
+	end
 	if FrostShock:Usable() then
 		return FrostShock
 	end
 	if FlameShock:Usable() then
 		return FlameShock
 	end
+	if WindfuryWeapon:Usable() and WindfuryWeapon:Remains() < 30 then
+		UseExtra(WindfuryWeapon)
+	end
+	if FlametongueWeapon:Usable() and FlametongueWeapon:Remains() < 30 then
+		UseExtra(FlametongueWeapon)
+	end
 	if WindfuryTotem:Usable() and WindfuryTotem:Remains() < 30 then
 		UseExtra(WindfuryTotem)
+	end
+	if LightningShield:Usable() and LightningShield:Remains() < 30 then
+		UseExtra(LightningShield)
+	end
+	if EarthElemental:Usable() then
+		UseExtra(EarthElemental)
 	end
 end
 
