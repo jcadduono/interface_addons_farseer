@@ -820,6 +820,7 @@ Stormstrike.cooldown_duration = 7.5
 Stormstrike.mana_cost = 2
 Stormstrike.hasted_cooldown = true
 local WindfuryTotem = Ability:Add(8512, true, false, 327942)
+WindfuryTotem.buff_duration = 120
 WindfuryTotem.mana_cost = 12
 local WindfuryWeapon = Ability:Add(33757, true, true)
 ------ Talents
@@ -1334,6 +1335,9 @@ function WindfuryWeapon:Remains()
 end
 
 function WindfuryTotem:Remains()
+	if (Player.time - self.last_used) < 2 then -- assume full duration immediately when dropped
+		return self.buff_duration
+	end
 	local remains = Ability.Remains(self)
 	if remains == 0 then
 		return 0
@@ -1518,10 +1522,9 @@ actions+=/earth_elemental,if=buff.blood_of_the_enemy.down&buff.feral_spirit.down
 actions+=/reaping_flames
 actions+=/concentrated_flame,if=!dot.concentrated_flame_burn.remains
 actions+=/crash_lightning
-actions+=/flame_shock,if=talent.lashing_flames.enabled&remains<(8*spell_haste)&target.time_to_die>(remains+4*spell_haste)
-actions+=/frost_shock
-actions+=/flame_shock
+actions+=/flame_shock,target_if=min:remains,if=remains<(10*spell_haste)&target.time_to_die>(remains+4*spell_haste)
 actions+=/windfury_totem,if=buff.windfury_totem.remains<30
+actions+=/frost_shock
 ]]
 	if (not FeralSpirit.known and not Ascendance.known) or FeralSpirit:Remains() > 6 or Ascendance:Remains() > 6 then
 		if BloodOfTheEnemy:Usable() then
@@ -1608,13 +1611,7 @@ actions+=/windfury_totem,if=buff.windfury_totem.remains<30
 	if CrashLightning:Usable() then
 		return CrashLightning
 	end
-	if LashingFlames.known and FlameShock:Usable() and FlameShock:Remains() < (8 * Player.haste_factor) and Target.timeToDie > (FlameShock:Remains() + 4 * Player.haste_factor) then
-		return FlameShock
-	end
-	if FrostShock:Usable() then
-		return FrostShock
-	end
-	if FlameShock:Usable() then
+	if FlameShock:Usable() and FlameShock:Remains() < (10 * Player.haste_factor) and Target.timeToDie > (FlameShock:Remains() + 4 * Player.haste_factor) then
 		return FlameShock
 	end
 	if WindfuryWeapon:Usable() and WindfuryWeapon:Remains() < 30 then
@@ -1623,14 +1620,17 @@ actions+=/windfury_totem,if=buff.windfury_totem.remains<30
 	if FlametongueWeapon:Usable() and FlametongueWeapon:Remains() < 30 then
 		UseExtra(FlametongueWeapon)
 	end
-	if WindfuryTotem:Usable() and WindfuryTotem:Remains() < 30 then
-		UseExtra(WindfuryTotem)
-	end
 	if LightningShield:Usable() and LightningShield:Remains() < 30 then
 		UseExtra(LightningShield)
 	end
 	if EarthElemental:Usable() then
 		UseExtra(EarthElemental)
+	end
+	if WindfuryTotem:Usable() and WindfuryTotem:Remains() < 30 then
+		return WindfuryTotem
+	end
+	if FrostShock:Usable() then
+		return FrostShock
 	end
 end
 
