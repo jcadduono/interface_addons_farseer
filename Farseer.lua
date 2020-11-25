@@ -151,9 +151,6 @@ local Target = {
 	estimated_range = 30,
 }
 
--- Azerite trait API access
-local Azerite = {}
-
 local farseerPanel = CreateFrame('Frame', 'farseerPanel', UIParent)
 farseerPanel:SetPoint('CENTER', 0, -169)
 farseerPanel:SetFrameStrata('BACKGROUND')
@@ -435,7 +432,7 @@ function Ability:Add(spellId, buff, player, spellId2)
 		auraTarget = buff and 'player' or 'target',
 		auraFilter = (buff and 'HELPFUL' or 'HARMFUL') .. (player and '|PLAYER' or '')
 	}
-	setmetatable(ability, Ability)
+	setmetatable(ability, self)
 	abilities.all[#abilities.all + 1] = ability
 	return ability
 end
@@ -635,10 +632,6 @@ function Ability:Previous(n)
 		i = i - 1
 	end
 	return Player.previous_gcd[i] == self
-end
-
-function Ability:AzeriteRank()
-	return Azerite.traits[self.spellId] or 0
 end
 
 function Ability:AutoAoe(removeUnaffected, trigger)
@@ -856,99 +849,12 @@ Stormbringer.buff_duration = 12
 
 ------ Procs
 
--- Azerite Traits
-
--- Heart of Azeroth
----- Major Essences
-local BloodOfTheEnemy = Ability:Add({297108, 298273, 298277} , false, true)
-BloodOfTheEnemy.buff_duration = 10
-BloodOfTheEnemy.cooldown_duration = 120
-BloodOfTheEnemy.essence_id = 23
-BloodOfTheEnemy.essence_major = true
-BloodOfTheEnemy:AutoAoe(true)
-BloodOfTheEnemy.buff = Ability:Add(297126, true, true) -- Seething Rage
-BloodOfTheEnemy.buff.buff_duration = 5
-BloodOfTheEnemy.buff.essence_id = 23
-local ConcentratedFlame = Ability:Add({295373, 299349, 299353}, true, true, 295378)
-ConcentratedFlame.buff_duration = 180
-ConcentratedFlame.cooldown_duration = 30
-ConcentratedFlame.requires_charge = true
-ConcentratedFlame.essence_id = 12
-ConcentratedFlame.essence_major = true
-ConcentratedFlame:SetVelocity(40)
-ConcentratedFlame.dot = Ability:Add(295368, false, true)
-ConcentratedFlame.dot.buff_duration = 6
-ConcentratedFlame.dot.tick_interval = 2
-ConcentratedFlame.dot.essence_id = 12
-ConcentratedFlame.dot.essence_major = true
-local GuardianOfAzeroth = Ability:Add({295840, 299355, 299358}, false, true)
-GuardianOfAzeroth.cooldown_duration = 180
-GuardianOfAzeroth.essence_id = 14
-GuardianOfAzeroth.essence_major = true
-local FocusedAzeriteBeam = Ability:Add({295258, 299336, 299338}, false, true)
-FocusedAzeriteBeam.cooldown_duration = 90
-FocusedAzeriteBeam.essence_id = 5
-FocusedAzeriteBeam.essence_major = true
-FocusedAzeriteBeam:AutoAoe()
-local MemoryOfLucidDreams = Ability:Add({298357, 299372, 299374}, true, true)
-MemoryOfLucidDreams.buff_duration = 15
-MemoryOfLucidDreams.cooldown_duration = 120
-MemoryOfLucidDreams.essence_id = 27
-MemoryOfLucidDreams.essence_major = true
-local PurifyingBlast = Ability:Add({295337, 299345, 299347}, false, true, 295338)
-PurifyingBlast.cooldown_duration = 60
-PurifyingBlast.essence_id = 6
-PurifyingBlast.essence_major = true
-PurifyingBlast:AutoAoe(true)
-local ReapingFlames = Ability:Add({310690, 311194, 311195}, false, true)
-ReapingFlames.cooldown_duration = 45
-ReapingFlames.essence_id = 35
-ReapingFlames.essence_major = true
-local RippleInSpace = Ability:Add({302731, 302982, 302983}, true, true)
-RippleInSpace.buff_duration = 2
-RippleInSpace.cooldown_duration = 60
-RippleInSpace.essence_id = 15
-RippleInSpace.essence_major = true
-local TheUnboundForce = Ability:Add({298452, 299376,299378}, false, true)
-TheUnboundForce.cooldown_duration = 45
-TheUnboundForce.essence_id = 28
-TheUnboundForce.essence_major = true
-local VisionOfPerfection = Ability:Add({296325, 299368, 299370}, true, true, 303345)
-VisionOfPerfection.buff_duration = 10
-VisionOfPerfection.essence_id = 22
-VisionOfPerfection.essence_major = true
-local WorldveinResonance = Ability:Add({295186, 298628, 299334}, true, true)
-WorldveinResonance.cooldown_duration = 60
-WorldveinResonance.essence_id = 4
-WorldveinResonance.essence_major = true
----- Minor Essences
-local AncientFlame = Ability:Add(295367, false, true)
-AncientFlame.buff_duration = 10
-AncientFlame.essence_id = 12
-local CondensedLifeForce = Ability:Add(295367, false, true)
-CondensedLifeForce.essence_id = 14
-local FocusedEnergy = Ability:Add(295248, true, true)
-FocusedEnergy.buff_duration = 4
-FocusedEnergy.essence_id = 5
-local Lifeblood = Ability:Add(295137, true, true)
-Lifeblood.essence_id = 4
-local LucidDreams = Ability:Add(298343, true, true)
-LucidDreams.buff_duration = 8
-LucidDreams.essence_id = 27
-local PurificationProtocol = Ability:Add(295305, false, true)
-PurificationProtocol.essence_id = 6
-PurificationProtocol:AutoAoe()
-local RealityShift = Ability:Add(302952, true, true)
-RealityShift.buff_duration = 20
-RealityShift.cooldown_duration = 30
-RealityShift.essence_id = 15
-local RecklessForce = Ability:Add(302932, true, true)
-RecklessForce.buff_duration = 3
-RecklessForce.essence_id = 28
-RecklessForce.counter = Ability:Add(302917, true, true)
-RecklessForce.counter.essence_id = 28
-local StriveForPerfection = Ability:Add(299369, true, true)
-StriveForPerfection.essence_id = 22
+-- Covenant abilities
+local ChainHarvest = Ability:Add(320674, false, true)
+ChainHarvest.cooldown_duration = 90
+ChainHarvest.mana_cost = 10
+ChainHarvest.consume_mw = true
+ChainHarvest:AutoAoe(true)
 -- PvP talents
 
 -- Racials
@@ -1036,63 +942,6 @@ PotionOfUnbridledFury.buff.triggers_gcd = false
 local Trinket1 = InventoryItem:Add(0)
 local Trinket2 = InventoryItem:Add(0)
 -- End Inventory Items
-
--- Start Azerite Trait API
-
-Azerite.equip_slots = { 1, 3, 5 } -- Head, Shoulder, Chest
-
-function Azerite:Init()
-	self.locations = {}
-	self.traits = {}
-	self.essences = {}
-	local i
-	for i = 1, #self.equip_slots do
-		self.locations[i] = ItemLocation:CreateFromEquipmentSlot(self.equip_slots[i])
-	end
-end
-
-function Azerite:Update()
-	local _, loc, slot, pid, pinfo
-	for pid in next, self.traits do
-		self.traits[pid] = nil
-	end
-	for pid in next, self.essences do
-		self.essences[pid] = nil
-	end
-	for _, loc in next, self.locations do
-		if GetInventoryItemID('player', loc:GetEquipmentSlot()) and C_AzeriteEmpoweredItem.IsAzeriteEmpoweredItem(loc) then
-			for _, slot in next, C_AzeriteEmpoweredItem.GetAllTierInfo(loc) do
-				if slot.azeritePowerIDs then
-					for _, pid in next, slot.azeritePowerIDs do
-						if C_AzeriteEmpoweredItem.IsPowerSelected(loc, pid) then
-							self.traits[pid] = 1 + (self.traits[pid] or 0)
-							pinfo = C_AzeriteEmpoweredItem.GetPowerInfo(pid)
-							if pinfo and pinfo.spellID then
-								--print('Azerite found:', pinfo.azeritePowerID, GetSpellInfo(pinfo.spellID))
-								self.traits[pinfo.spellID] = self.traits[pid]
-							end
-						end
-					end
-				end
-			end
-		end
-	end
-	for _, loc in next, C_AzeriteEssence.GetMilestones() or {} do
-		if loc.slot then
-			pid = C_AzeriteEssence.GetMilestoneEssence(loc.ID)
-			if pid then
-				pinfo = C_AzeriteEssence.GetEssenceInfo(pid)
-				self.essences[pid] = {
-					id = pid,
-					rank = pinfo.rank,
-					major = loc.slot == 0,
-				}
-			end
-		end
-	end
-end
-
--- End Azerite Trait API
 
 -- Start Player API
 
@@ -1183,19 +1032,13 @@ function Player:UpdateAbilities()
 		ability.known = false
 		for _, spellId in next, ability.spellIds do
 			ability.spellId, ability.name, _, ability.icon = spellId, GetSpellInfo(spellId)
-			if IsPlayerSpell(spellId) or Azerite.traits[spellId] then
+			if IsPlayerSpell(spellId) then
 				ability.known = true
 				break
 			end
 		end
 		if C_LevelLink.IsSpellLocked(ability.spellId) then
 			ability.known = false -- spell is locked, do not mark as known
-		elseif ability.essence_id and Azerite.essences[ability.essence_id] then
-			if ability.essence_major then
-				ability.known = Azerite.essences[ability.essence_id].major
-			else
-				ability.known = true
-			end
 		end
 	end
 
@@ -1314,6 +1157,14 @@ function MaelstromWeapon:Stack()
 	local stack = Ability.Stack(self)
 	if Player.ability_casting and Player.ability_casting.consume_mw then
 		stack = stack - 5
+	end
+	return max(0, stack)
+end
+
+function Hailstorm:Stack()
+	local stack = Ability.Stack(self)
+	if Player.ability_casting and Player.ability_casting.consume_mw then
+		stack = min(5, stack + Player.maelstrom_weapon)
 	end
 	return max(0, stack)
 end
@@ -1491,45 +1342,36 @@ actions=bloodlust
 actions+=/wind_shear
 actions+=/auto_attack
 actions+=/potion,if=expected_combat_length-time<60
-actions+=/blood_of_the_enemy,if=buff.feral_spirit.remains>6|buff.ascendance.remains>6
 actions+=/use_items,if=buff.feral_spirit.remains>6
 actions+=/frost_shock,if=talent.hailstorm.enabled&buff.hailstorm.stack>=5&(buff.hailstorm.remains<gcd*2|buff.maelstrom_weapon.stack>=9)
+actions+=/chain_harvest,if=buff.maelstrom_weapon.stack>=9|(buff.maelstrom_weapon.stack>=5&buff.maelstrom_weapon.remains<gcd*2)
 actions+=/elemental_blast,if=active_enemies<4&(buff.maelstrom_weapon.stack>=9|(buff.maelstrom_weapon.stack>=5&buff.maelstrom_weapon.remains<gcd*2))
 actions+=/chain_lightning,if=active_enemies>1&(buff.maelstrom_weapon.stack>=9|(buff.maelstrom_weapon.stack>=5&buff.maelstrom_weapon.remains<gcd*2))
 actions+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=9|(buff.maelstrom_weapon.stack>=5&buff.maelstrom_weapon.remains<gcd*2)
 actions+=/frost_shock,if=active_enemies>1&talent.hailstorm.enabled&buff.hailstorm.stack>=5
-actions+=/sundering,if=debuff.blood_of_the_enemy.up
 actions+=/crash_lightning,if=active_enemies>1&buff.crash_lightning.down
 actions+=/windstrike
 actions+=/flame_shock,if=!remains&talent.lashing_flames.enabled&active_enemies=1&target.time_to_die>(4*spell_haste)
 actions+=/stormstrike
 actions+=/lava_lash
 actions+=/flame_shock,if=!remains&(!talent.hailstorm.enabled|(active_enemies=1&buff.hailstorm.stack<=3))&target.time_to_die>(8*spell_haste)
-actions+=/sundering,if=!essence.blood_of_the_enemy.major|cooldown.blood_of_the_enemy.remains>15
-actions+=/the_unbound_force,if=buff.reckless_force.up|buff.reckless_force_counter.stack<4
-actions+=/guardian_of_azeroth
-actions+=/worldvein_resonance,if=buff.lifeblood.stack<4
-actions+=/focused_azerite_beam
-actions+=/purifying_blast
+actions+=/sundering
 actions+=/feral_spirit
 actions+=/flame_shock,if=refreshable&(!talent.hailstorm.enabled|(active_enemies=1&(talent.lashing_flames.enabled|buff.hailstorm.stack<=3)))&target.time_to_die>(remains+8*spell_haste)
 actions+=/frost_shock,if=!talent.hailstorm.enabled|buff.hailstorm.up
+actions+=/chain_harvest,if=buff.maelstrom_weapon.stack>=5&(!talent.hailstorm.enabled|buff.hailstorm.stack<5)
 actions+=/elemental_blast,if=buff.maelstrom_weapon.stack>=5&active_enemies<4&(!talent.hailstorm.enabled|buff.hailstorm.stack<5)
 actions+=/chain_lightning,if=buff.maelstrom_weapon.stack>=5&active_enemies>1&(!talent.hailstorm.enabled|buff.hailstorm.stack<5)
 actions+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&(!talent.hailstorm.enabled|buff.hailstorm.stack<5)
 actions+=/crash_lightning,if=active_enemies>1
-actions+=/earth_elemental,if=buff.blood_of_the_enemy.down&buff.feral_spirit.down
-actions+=/reaping_flames
-actions+=/concentrated_flame,if=!dot.concentrated_flame_burn.remains
+actions+=/earth_elemental,if=buff.feral_spirit.down
 actions+=/crash_lightning
 actions+=/flame_shock,target_if=min:remains,if=remains<(10*spell_haste)&target.time_to_die>(remains+4*spell_haste)
 actions+=/windfury_totem,if=buff.windfury_totem.remains<30
 actions+=/frost_shock
 ]]
 	if (not FeralSpirit.known and not Ascendance.known) or FeralSpirit:Remains() > 6 or Ascendance:Remains() > 6 then
-		if BloodOfTheEnemy:Usable() then
-			UseCooldown(BloodOfTheEnemy)
-		elseif Opt.trinket then
+		if Opt.trinket then
 			if Trinket1:Usable() then
 				UseCooldown(Trinket1)
 			elseif Trinket2:Usable() then
@@ -1546,9 +1388,6 @@ actions+=/frost_shock
 	end
 	if Hailstorm.known and FrostShock:Usable() and Player:Enemies() > 1 and Hailstorm:Stack() >= 5 then
 		return FrostShock
-	end
-	if BloodOfTheEnemy.known and Sundering:Usable() and (BloodOfTheEnemy:Up() or BloodOfTheEnemy.buff:Up()) then
-		UseCooldown(Sundering)
 	end
 	if CrashLightning:Usable() and Player:Enemies() > 1 and CrashLightning.buff:Down() then
 		return CrashLightning
@@ -1568,19 +1407,9 @@ actions+=/frost_shock
 	if FlameShock:Usable() and FlameShock:Down() and (not Hailstorm.known or (Player:Enemies() == 1 and Hailstorm:Stack() <= 3)) and Target.timeToDie > (8 * Player.haste_factor) then
 		return FlameShock
 	end
-	if Sundering:Usable() and (not BloodOfTheEnemy.known or not BloodOfTheEnemy:Ready(15)) then
+	if Sundering:Usable() then
 		UseCooldown(Sundering)
-	elseif TheUnboundForce:Usable() and (RecklessForce:Up() or RecklessForce.counter:Stack() < 4) then
-		UseCooldown(TheUnboundForce)
-	elseif GuardianOfAzeroth:Usable() then
-		UseCooldown(GuardianOfAzeroth)
-	elseif WorldveinResonance:Usable() and Lifeblood:Stack() < 4 then
-		UseCooldown(WorldveinResonance)
-	elseif FocusedAzeriteBeam:Usable() then
-		UseCooldown(FocusedAzeriteBeam)
-	elseif PurifyingBlast:Usable() then
-		UseCooldown(PurifyingBlast)
-	elseif FeralSpirit:Usable() and (not BloodOfTheEnemy.known or BloodOfTheEnemy:Ready(5)) then
+	elseif FeralSpirit:Usable() then
 		UseCooldown(FeralSpirit)
 	end
 	if FlameShock:Usable() and FlameShock:Refreshable() and (not Hailstorm.known or (Player:Enemies() == 1 and (LashingFlames.known or Hailstorm:Stack() <= 3))) and Target.timeToDie > (FlameShock:Remains() + 8 * Player.haste_factor) then
@@ -1596,14 +1425,8 @@ actions+=/frost_shock
 	if CrashLightning:Usable() and Player:Enemies() > 1 then
 		return CrashLightning
 	end
-	if EarthElemental:Usable() and BloodOfTheEnemy:Down() and FeralSpirit:Down() and Player:UnderAttack() then
+	if EarthElemental:Usable() and FeralSpirit:Down() and Player:UnderAttack() then
 		UseExtra(EarthElemental)
-	end
-	if ReapingFlames:Usable() then
-		return ReapingFlames
-	end
-	if ConcentratedFlame:Usable() and ConcentratedFlame.dot:Down() then
-		return ConcentratedFlame
 	end
 	if Stormstrike:Usable(Player.haste_factor) then
 		return Stormstrike
@@ -1635,6 +1458,9 @@ actions+=/frost_shock
 end
 
 APL[SPEC.ENHANCEMENT].spenders = function(self)
+	if ChainHarvest:Usable() then
+		UseCooldown(ChainHarvest, true)
+	end
 	if ElementalBlast:Usable() and Player:Enemies() < 4 then
 		return ElementalBlast
 	end
@@ -2018,7 +1844,6 @@ function events:ADDON_LOADED(name)
 			print('[|cFFFFD000Warning|r] ' .. name .. ' is not designed for players under level 10, and almost certainly will not operate properly!')
 		end
 		InitOpts()
-		Azerite:Init()
 		UI:UpdateDraggable()
 		UI:UpdateAlpha()
 		UI:UpdateScale()
@@ -2204,7 +2029,6 @@ function events:PLAYER_EQUIPMENT_CHANGED()
 			inventoryItems[i].can_use = false
 		end
 	end
-	Azerite:Update()
 	Player:UpdateAbilities()
 end
 
@@ -2253,11 +2077,6 @@ function events:UNIT_SPELLCAST_STOP(srcName)
 end
 
 function events:PLAYER_PVP_TALENT_UPDATE()
-	Player:UpdateAbilities()
-end
-
-function events:AZERITE_ESSENCE_UPDATE()
-	Azerite:Update()
 	Player:UpdateAbilities()
 end
 
@@ -2611,3 +2430,5 @@ function SlashCmdList.Farseer(msg, editbox)
 	print('Got ideas for improvement or found a bug? Talk to me on Battle.net:',
 		'|c' .. BATTLENET_FONT_COLOR:GenerateHexColor() .. '|HBNadd:Spy#1955|h[Spy#1955]|h|r')
 end
+
+-- End Slash Commands
