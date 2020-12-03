@@ -855,6 +855,14 @@ ChainHarvest.cooldown_duration = 90
 ChainHarvest.mana_cost = 10
 ChainHarvest.consume_mw = true
 ChainHarvest:AutoAoe(true)
+-- Legendary effects
+local DoomWinds = Ability:Add(335902, true, true, 335903)
+DoomWinds.buff_duration = 12
+DoomWinds.cooldown_duration = 60
+DoomWinds.bonus_id = 6993
+DoomWinds.cooldown = Ability:Add(335904, false, true)
+DoomWinds.cooldown.auraTarget = 'player'
+DoomWinds.cooldown.bonus_id = 6993
 -- PvP talents
 
 -- Racials
@@ -1018,6 +1026,24 @@ function Player:Equipped(itemID, slot)
 	return false
 end
 
+function Player:BonusIdEquipped(bonusId)
+	local i, id, link, item
+	for i = 1, 19 do
+		link = GetInventoryItemLink('player', i)
+		if link then
+			item = link:match('Hitem:%d+:([%d:]+)')
+			if item then
+				for id in item:gmatch('(%d+)') do
+					if tonumber(id) == bonusId then
+						return true
+					end
+				end
+			end
+		end
+	end
+	return false
+end
+
 function Player:InArenaOrBattleground()
 	return self.instance == 'arena' or self.instance == 'pvp'
 end
@@ -1039,6 +1065,9 @@ function Player:UpdateAbilities()
 		end
 		if C_LevelLink.IsSpellLocked(ability.spellId) then
 			ability.known = false -- spell is locked, do not mark as known
+		end
+		if ability.bonus_id then -- used for checking Legendary crafted effects
+			ability.known = self:BonusIdEquipped(ability.bonus_id)
 		end
 	end
 
@@ -1210,6 +1239,10 @@ function Windstrike:Usable()
 	return true
 end
 
+function DoomWinds:Cooldown()
+	return self.cooldown:Remains()
+end
+
 -- End Ability Modifications
 
 local function UseCooldown(ability, overwrite)
@@ -1313,7 +1346,7 @@ actions.precombat+=/snapshot_stats
 		if FlametongueWeapon:Usable() and FlametongueWeapon:Remains() < 300 then
 			UseCooldown(FlametongueWeapon)
 		end
-		if WindfuryTotem:Usable() and WindfuryTotem:Remains() < 30 then
+		if WindfuryTotem:Usable() and WindfuryTotem:Remains() < 30 and (not DoomWinds.known or not DoomWinds:Ready(6)) then
 			UseCooldown(WindfuryTotem)
 		end
 		if LightningShield:Usable() and LightningShield:Remains() < 300 then
@@ -1392,6 +1425,13 @@ actions+=/frost_shock
 	if CrashLightning:Usable() and Player:Enemies() > 1 and CrashLightning.buff:Down() then
 		return CrashLightning
 	end
+	if DoomWinds.known then
+		if DoomWinds:Ready() and WindfuryTotem:Usable() and (Player:Enemies() == 1 or (CrashLightning:Remains() > 6 and (not Sundering.known or Sundering:Ready(12)))) then
+			UseCooldown(WindfuryTotem)
+		elseif Sundering:Usable() and between(DoomWinds:Remains(), 0.2, 4) then
+			UseCooldown(Sundering)
+		end
+	end
 	if Windstrike:Usable() then
 		return Windstrike
 	end
@@ -1407,7 +1447,7 @@ actions+=/frost_shock
 	if FlameShock:Usable() and FlameShock:Down() and (not Hailstorm.known or (Player:Enemies() == 1 and Hailstorm:Stack() <= 3)) and Target.timeToDie > (8 * Player.haste_factor) then
 		return FlameShock
 	end
-	if Sundering:Usable() then
+	if Sundering:Usable() and (not DoomWinds.known or Player:Enemies() == 1 or not DoomWinds:Ready(12)) then
 		UseCooldown(Sundering)
 	elseif FeralSpirit:Usable() then
 		UseCooldown(FeralSpirit)
