@@ -1069,6 +1069,9 @@ function Player:UpdateAbilities()
 		if ability.bonus_id then -- used for checking Legendary crafted effects
 			ability.known = self:BonusIdEquipped(ability.bonus_id)
 		end
+		if ability.conduit_id then
+			ability.known = C_Soulbinds.IsConduitInstalledInSoulbind(C_Soulbinds.GetActiveSoulbindID(), ability.conduit_id)
+		end
 	end
 
 	CrashLightning.buff.known = CrashLightning.known
