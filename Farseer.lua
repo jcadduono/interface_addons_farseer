@@ -1,7 +1,9 @@
+local ADDON = 'Farseer'
 if select(2, UnitClass('player')) ~= 'SHAMAN' then
-	DisableAddOn('Farseer')
+	DisableAddOn(ADDON)
 	return
 end
+local ADDON_PATH = 'Interface\\AddOns\\' .. ADDON .. '\\'
 
 -- copy heavily accessed global functions into local scope for performance
 local GetSpellCooldown = _G.GetSpellCooldown
@@ -28,7 +30,7 @@ Farseer = {}
 local Opt -- use this as a local table reference to Farseer
 
 SLASH_Farseer1, SLASH_Farseer2 = '/fs', '/farseer'
-BINDING_HEADER_FARSEER = 'Farseer'
+BINDING_HEADER_FARSEER = ADDON
 
 local function InitOpts()
 	local function SetDefaults(t, ref)
@@ -86,8 +88,9 @@ local function InitOpts()
 		aoe = false,
 		auto_aoe = false,
 		auto_aoe_ttl = 10,
+		cd_ttd = 8,
 		pot = false,
-		trinket = true
+		trinket = true,
 	})
 end
 
@@ -146,7 +149,7 @@ local Player = {
 local Target = {
 	boss = false,
 	guid = 0,
-	healthArray = {},
+	health_array = {},
 	hostile = false,
 	estimated_range = 30,
 }
@@ -162,7 +165,7 @@ farseerPanel.icon:SetAllPoints(farseerPanel)
 farseerPanel.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
 farseerPanel.border = farseerPanel:CreateTexture(nil, 'ARTWORK')
 farseerPanel.border:SetAllPoints(farseerPanel)
-farseerPanel.border:SetTexture('Interface\\AddOns\\Farseer\\border.blp')
+farseerPanel.border:SetTexture(ADDON_PATH .. 'border.blp')
 farseerPanel.border:Hide()
 farseerPanel.dimmer = farseerPanel:CreateTexture(nil, 'BORDER')
 farseerPanel.dimmer:SetAllPoints(farseerPanel)
@@ -209,7 +212,7 @@ farseerPreviousPanel.icon:SetAllPoints(farseerPreviousPanel)
 farseerPreviousPanel.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
 farseerPreviousPanel.border = farseerPreviousPanel:CreateTexture(nil, 'ARTWORK')
 farseerPreviousPanel.border:SetAllPoints(farseerPreviousPanel)
-farseerPreviousPanel.border:SetTexture('Interface\\AddOns\\Farseer\\border.blp')
+farseerPreviousPanel.border:SetTexture(ADDON_PATH .. 'border.blp')
 local farseerCooldownPanel = CreateFrame('Frame', 'farseerCooldownPanel', UIParent)
 farseerCooldownPanel:SetSize(64, 64)
 farseerCooldownPanel:SetFrameStrata('BACKGROUND')
@@ -223,7 +226,7 @@ farseerCooldownPanel.icon:SetAllPoints(farseerCooldownPanel)
 farseerCooldownPanel.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
 farseerCooldownPanel.border = farseerCooldownPanel:CreateTexture(nil, 'ARTWORK')
 farseerCooldownPanel.border:SetAllPoints(farseerCooldownPanel)
-farseerCooldownPanel.border:SetTexture('Interface\\AddOns\\Farseer\\border.blp')
+farseerCooldownPanel.border:SetTexture(ADDON_PATH .. 'border.blp')
 farseerCooldownPanel.cd = CreateFrame('Cooldown', nil, farseerCooldownPanel, 'CooldownFrameTemplate')
 farseerCooldownPanel.cd:SetAllPoints(farseerCooldownPanel)
 local farseerInterruptPanel = CreateFrame('Frame', 'farseerInterruptPanel', UIParent)
@@ -239,7 +242,7 @@ farseerInterruptPanel.icon:SetAllPoints(farseerInterruptPanel)
 farseerInterruptPanel.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
 farseerInterruptPanel.border = farseerInterruptPanel:CreateTexture(nil, 'ARTWORK')
 farseerInterruptPanel.border:SetAllPoints(farseerInterruptPanel)
-farseerInterruptPanel.border:SetTexture('Interface\\AddOns\\Farseer\\border.blp')
+farseerInterruptPanel.border:SetTexture(ADDON_PATH .. 'border.blp')
 farseerInterruptPanel.cast = CreateFrame('Cooldown', nil, farseerInterruptPanel, 'CooldownFrameTemplate')
 farseerInterruptPanel.cast:SetAllPoints(farseerInterruptPanel)
 local farseerExtraPanel = CreateFrame('Frame', 'farseerExtraPanel', UIParent)
@@ -255,7 +258,7 @@ farseerExtraPanel.icon:SetAllPoints(farseerExtraPanel)
 farseerExtraPanel.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
 farseerExtraPanel.border = farseerExtraPanel:CreateTexture(nil, 'ARTWORK')
 farseerExtraPanel.border:SetAllPoints(farseerExtraPanel)
-farseerExtraPanel.border:SetTexture('Interface\\AddOns\\Farseer\\border.blp')
+farseerExtraPanel.border:SetTexture(ADDON_PATH .. 'border.blp')
 
 -- Start AoE
 
@@ -324,7 +327,6 @@ local autoAoe = {
 	blacklist = {},
 	ignored_units = {
 		[120651] = true, -- Explosives (Mythic+ affix)
-		[161895] = true, -- Thing From Beyond (40+ Corruption)
 	},
 }
 
@@ -941,8 +943,6 @@ local GreaterFlaskOfEndlessFathoms = InventoryItem:Add(168652)
 GreaterFlaskOfEndlessFathoms.buff = Ability:Add(298837, true, true)
 local GreaterFlaskOfTheCurrents = InventoryItem:Add(168651)
 GreaterFlaskOfTheCurrents.buff = Ability:Add(298836, true, true)
-local LightningForgedAugmentRune = InventoryItem:Add(174906)
-LightningForgedAugmentRune.buff = Ability:Add(317065, true, true)
 local PotionOfUnbridledFury = InventoryItem:Add(169299)
 PotionOfUnbridledFury.buff = Ability:Add(300714, true, true)
 PotionOfUnbridledFury.buff.triggers_gcd = false
@@ -1109,11 +1109,11 @@ function Target:UpdateHealth()
 	timer.health = 0
 	self.health = UnitHealth('target')
 	self.health_max = UnitHealthMax('target')
-	table.remove(self.healthArray, 1)
-	self.healthArray[25] = self.health
+	table.remove(self.health_array, 1)
+	self.health_array[25] = self.health
 	self.timeToDieMax = self.health / Player.health_max * 15
 	self.healthPercentage = self.health_max > 0 and (self.health / self.health_max * 100) or 100
-	self.healthLostPerSec = (self.healthArray[1] - self.health) / 5
+	self.healthLostPerSec = (self.health_array[1] - self.health) / 5
 	self.timeToDie = self.healthLostPerSec > 0 and min(self.timeToDieMax, self.health / self.healthLostPerSec) or self.timeToDieMax
 end
 
@@ -1133,7 +1133,7 @@ function Target:Update()
 		self.hostile = true
 		local i
 		for i = 1, 25 do
-			self.healthArray[i] = 0
+			self.health_array[i] = 0
 		end
 		self:UpdateHealth()
 		if Opt.always_on then
@@ -1150,7 +1150,7 @@ function Target:Update()
 		self.guid = guid
 		local i
 		for i = 1, 25 do
-			self.healthArray[i] = UnitHealth('target')
+			self.health_array[i] = UnitHealth('target')
 		end
 	end
 	self.boss = false
@@ -1277,9 +1277,6 @@ APL[SPEC.ELEMENTAL].main = function(self)
 			if Opt.pot and GreaterFlaskOfEndlessFathoms:Usable() and GreaterFlaskOfEndlessFathoms.buff:Remains() < 300 then
 				UseCooldown(GreaterFlaskOfEndlessFathoms)
 			end
-			if LightningForgedAugmentRune:Usable() and LightningForgedAugmentRune.buff:Remains() < 300 then
-				UseCooldown(LightningForgedAugmentRune)
-			end
 			if Opt.pot and Target.boss and PotionOfUnbridledFury:Usable() then
 				UseCooldown(PotionOfUnbridledFury)
 			end
@@ -1335,9 +1332,6 @@ actions.precombat+=/snapshot_stats
 		if not Player:InArenaOrBattleground() then
 			if Opt.pot and GreaterFlaskOfTheCurrents:Usable() and GreaterFlaskOfTheCurrents.buff:Remains() < 300 then
 				UseCooldown(GreaterFlaskOfTheCurrents)
-			end
-			if LightningForgedAugmentRune:Usable() and LightningForgedAugmentRune.buff:Remains() < 300 then
-				UseCooldown(LightningForgedAugmentRune)
 			end
 			if Opt.pot and Target.boss and PotionOfUnbridledFury:Usable() then
 				UseCooldown(PotionOfUnbridledFury)
@@ -1406,7 +1400,8 @@ actions+=/flame_shock,target_if=min:remains,if=remains<(10*spell_haste)&target.t
 actions+=/windfury_totem,if=buff.windfury_totem.remains<30
 actions+=/frost_shock
 ]]
-	if (not FeralSpirit.known and not Ascendance.known) or FeralSpirit:Remains() > 6 or Ascendance:Remains() > 6 then
+	Player.use_cds = Opt.cooldown and (Target.boss or Target.player or (not Opt.boss_only and Target.timeToDie > Opt.cd_ttd) or Ascendance:Up() or FeralSpirit:Up())
+	if Player.use_cds and ((not FeralSpirit.known and not Ascendance.known) or FeralSpirit:Remains() > 6 or Ascendance:Remains() > 6) then
 		if Opt.trinket then
 			if Trinket1:Usable() then
 				UseCooldown(Trinket1)
@@ -1450,11 +1445,11 @@ actions+=/frost_shock
 	if FlameShock:Usable() and FlameShock:Down() and (not Hailstorm.known or (Player:Enemies() == 1 and Hailstorm:Stack() <= 3)) and Target.timeToDie > (8 * Player.haste_factor) then
 		return FlameShock
 	end
-	if Ascendance:Usable() then
+	if Player.use_cds and Ascendance:Usable() then
 		UseCooldown(Ascendance)
 	elseif Sundering:Usable() and (not DoomWinds.known or Player:Enemies() == 1 or not DoomWinds:Ready(12)) then
 		UseCooldown(Sundering)
-	elseif FeralSpirit:Usable() then
+	elseif Player.use_cds and FeralSpirit:Usable() then
 		UseCooldown(FeralSpirit)
 	end
 	if FlameShock:Usable() and FlameShock:Refreshable() and (not Hailstorm.known or (Player:Enemies() == 1 and (LashingFlames.known or Hailstorm:Stack() <= 3))) and Target.timeToDie > (FlameShock:Remains() + 8 * Player.haste_factor) then
@@ -1522,9 +1517,6 @@ APL[SPEC.RESTORATION].main = function(self)
 		if not Player:InArenaOrBattleground() then
 			if Opt.pot and GreaterFlaskOfEndlessFathoms:Usable() and GreaterFlaskOfEndlessFathoms.buff:Remains() < 300 then
 				UseCooldown(GreaterFlaskOfEndlessFathoms)
-			end
-			if LightningForgedAugmentRune:Usable() and LightningForgedAugmentRune.buff:Remains() < 300 then
-				UseCooldown(LightningForgedAugmentRune)
 			end
 		end
 	end
@@ -1879,14 +1871,14 @@ end
 -- Start Event Handling
 
 function events:ADDON_LOADED(name)
-	if name == 'Farseer' then
+	if name == ADDON then
 		Opt = Farseer
 		if not Opt.frequency then
-			print('It looks like this is your first time running ' .. name .. ', why don\'t you take some time to familiarize yourself with the commands?')
+			print('It looks like this is your first time running ' .. ADDON .. ', why don\'t you take some time to familiarize yourself with the commands?')
 			print('Type |cFFFFD000' .. SLASH_Farseer1 .. '|r for a list of commands.')
 		end
 		if UnitLevel('player') < 10 then
-			print('[|cFFFFD000Warning|r] ' .. name .. ' is not designed for players under level 10, and almost certainly will not operate properly!')
+			print('[|cFFFFD000Warning|r] ' .. ADDON .. ' is not designed for players under level 10, and almost certainly will not operate properly!')
 		end
 		InitOpts()
 		UI:UpdateDraggable()
@@ -1927,7 +1919,7 @@ function events:COMBAT_LOG_EVENT_UNFILTERED()
 
 	local ability = spellId and abilities.bySpellId[spellId]
 	if not ability then
-		--print(format('EVENT %s TRACK CHECK FOR UNKNOWN %s ID %d', eventType, spellName or 'Unknown', spellId or 0))
+		--print(format('EVENT %s TRACK CHECK FOR UNKNOWN %s ID %d', eventType, type(spellName) == 'string' and spellName or 'Unknown', spellId or 0))
 		return
 	end
 
@@ -1961,7 +1953,7 @@ function events:COMBAT_LOG_EVENT_UNFILTERED()
 		end
 		if Opt.previous and farseerPanel:IsVisible() then
 			farseerPreviousPanel.ability = ability
-			farseerPreviousPanel.border:SetTexture('Interface\\AddOns\\Farseer\\border.blp')
+			farseerPreviousPanel.border:SetTexture(ADDON_PATH .. 'border.blp')
 			farseerPreviousPanel.icon:SetTexture(ability.icon)
 			farseerPreviousPanel:Show()
 		end
@@ -1995,7 +1987,7 @@ function events:COMBAT_LOG_EVENT_UNFILTERED()
 			ability.travel_start[dstGUID] = nil
 		end
 		if Opt.previous and Opt.miss_effect and eventType == 'SPELL_MISSED' and farseerPanel:IsVisible() and ability == farseerPreviousPanel.ability then
-			farseerPreviousPanel.border:SetTexture('Interface\\AddOns\\Farseer\\misseffect.blp')
+			farseerPreviousPanel.border:SetTexture(ADDON_PATH .. 'misseffect.blp')
 		end
 	end
 end
@@ -2205,10 +2197,10 @@ local function Status(desc, opt, ...)
 	else
 		opt_view = opt and '|cFF00C000On|r' or '|cFFC00000Off|r'
 	end
-	print('Farseer -', desc .. ':', opt_view, ...)
+	print(ADDON, '-', desc .. ':', opt_view, ...)
 end
 
-function SlashCmdList.Farseer(msg, editbox)
+SlashCmdList[ADDON] = function(msg, editbox)
 	msg = { strsplit(' ', msg:lower()) }
 	if startsWith(msg[1], 'lock') then
 		if msg[2] then
@@ -2225,7 +2217,7 @@ function SlashCmdList.Farseer(msg, editbox)
 				Opt.snap = 'below'
 			else
 				Opt.snap = false
-				doomedPanel:ClearAllPoints()
+				farseerPanel:ClearAllPoints()
 			end
 			UI.OnResourceFrameShow()
 		end
@@ -2260,12 +2252,12 @@ function SlashCmdList.Farseer(msg, editbox)
 			end
 			return Status('Interrupt ability icon scale', Opt.scale.interrupt, 'times')
 		end
-		if startsWith(msg[2], 'ex') or startsWith(msg[2], 'pet') then
+		if startsWith(msg[2], 'ex') then
 			if msg[3] then
 				Opt.scale.extra = tonumber(msg[3]) or 0.4
 				UI:UpdateScale()
 			end
-			return Status('Extra/Pet cooldown ability icon scale', Opt.scale.extra, 'times')
+			return Status('Extra cooldown ability icon scale', Opt.scale.extra, 'times')
 		end
 		if msg[2] == 'glow' then
 			if msg[3] then
@@ -2274,7 +2266,7 @@ function SlashCmdList.Farseer(msg, editbox)
 			end
 			return Status('Action button glow scale', Opt.scale.glow, 'times')
 		end
-		return Status('Default icon scale options', '|cFFFFD000prev 0.7|r, |cFFFFD000main 1|r, |cFFFFD000cd 0.7|r, |cFFFFD000interrupt 0.4|r, |cFFFFD000pet 0.4|r, and |cFFFFD000glow 1|r')
+		return Status('Default icon scale options', '|cFFFFD000prev 0.7|r, |cFFFFD000main 1|r, |cFFFFD000cd 0.7|r, |cFFFFD000interrupt 0.4|r, |cFFFFD000extra 0.4|r, and |cFFFFD000glow 1|r')
 	end
 	if msg[1] == 'alpha' then
 		if msg[2] then
@@ -2311,12 +2303,12 @@ function SlashCmdList.Farseer(msg, editbox)
 			end
 			return Status('Glowing ability buttons (interrupt icon)', Opt.glow.interrupt)
 		end
-		if startsWith(msg[2], 'ex') or startsWith(msg[2], 'pet') then
+		if startsWith(msg[2], 'ex') then
 			if msg[3] then
 				Opt.glow.extra = msg[3] == 'on'
 				UI:UpdateGlows()
 			end
-			return Status('Glowing ability buttons (extra/pet cooldown icon)', Opt.glow.extra)
+			return Status('Glowing ability buttons (extra cooldown icon)', Opt.glow.extra)
 		end
 		if startsWith(msg[2], 'bliz') then
 			if msg[3] then
@@ -2334,7 +2326,7 @@ function SlashCmdList.Farseer(msg, editbox)
 			end
 			return Status('Glow color', '|cFFFF0000' .. Opt.glow.color.r, '|cFF00FF00' .. Opt.glow.color.g, '|cFF0000FF' .. Opt.glow.color.b)
 		end
-		return Status('Possible glow options', '|cFFFFD000main|r, |cFFFFD000cd|r, |cFFFFD000interrupt|r, |cFFFFD000pet|r, |cFFFFD000blizzard|r, and |cFFFFD000color')
+		return Status('Possible glow options', '|cFFFFD000main|r, |cFFFFD000cd|r, |cFFFFD000interrupt|r, |cFFFFD000extra|r, |cFFFFD000blizzard|r, and |cFFFFD000color')
 	end
 	if startsWith(msg[1], 'prev') then
 		if msg[2] then
@@ -2348,13 +2340,13 @@ function SlashCmdList.Farseer(msg, editbox)
 			Opt.always_on = msg[2] == 'on'
 			Target:Update()
 		end
-		return Status('Show the Doomed UI without a target', Opt.always_on)
+		return Status('Show the ' .. ADDON .. ' UI without a target', Opt.always_on)
 	end
 	if msg[1] == 'cd' then
 		if msg[2] then
 			Opt.cooldown = msg[2] == 'on'
 		end
-		return Status('Use Doomed for cooldown management', Opt.cooldown)
+		return Status('Use ' .. ADDON .. ' for cooldown management', Opt.cooldown)
 	end
 	if msg[1] == 'swipe' then
 		if msg[2] then
@@ -2426,6 +2418,12 @@ function SlashCmdList.Farseer(msg, editbox)
 		end
 		return Status('Length of time target exists in auto AoE after being hit', Opt.auto_aoe_ttl, 'seconds')
 	end
+	if msg[1] == 'ttd' then
+		if msg[2] then
+			Opt.cd_ttd = tonumber(msg[2]) or 8
+		end
+		return Status('Minimum enemy lifetime to use cooldowns on (ignored on bosses)', Opt.cd_ttd, 'seconds')
+	end
 	if startsWith(msg[1], 'pot') then
 		if msg[2] then
 			Opt.pot = msg[2] == 'on'
@@ -2444,31 +2442,32 @@ function SlashCmdList.Farseer(msg, editbox)
 		UI:SnapAllPanels()
 		return Status('Position has been reset to', 'default')
 	end
-	print('Farseer (version: |cFFFFD000' .. GetAddOnMetadata('Farseer', 'Version') .. '|r) - Commands:')
+	print(ADDON, '(version: |cFFFFD000' .. GetAddOnMetadata(ADDON, 'Version') .. '|r) - Commands:')
 	local _, cmd
 	for _, cmd in next, {
-		'locked |cFF00C000on|r/|cFFC00000off|r - lock the Farseer UI so that it can\'t be moved',
-		'snap |cFF00C000above|r/|cFF00C000below|r/|cFFC00000off|r - snap the Farseer UI to the Personal Resource Display',
-		'scale |cFFFFD000prev|r/|cFFFFD000main|r/|cFFFFD000cd|r/|cFFFFD000interrupt|r/|cFFFFD000extra|r/|cFFFFD000glow|r - adjust the scale of the Farseer UI icons',
-		'alpha |cFFFFD000[percent]|r - adjust the transparency of the Farseer UI icons',
+		'locked |cFF00C000on|r/|cFFC00000off|r - lock the ' .. ADDON .. ' UI so that it can\'t be moved',
+		'snap |cFF00C000above|r/|cFF00C000below|r/|cFFC00000off|r - snap the ' .. ADDON .. ' UI to the Personal Resource Display',
+		'scale |cFFFFD000prev|r/|cFFFFD000main|r/|cFFFFD000cd|r/|cFFFFD000interrupt|r/|cFFFFD000extra|r/|cFFFFD000glow|r - adjust the scale of the ' .. ADDON .. ' UI icons',
+		'alpha |cFFFFD000[percent]|r - adjust the transparency of the ' .. ADDON .. ' UI icons',
 		'frequency |cFFFFD000[number]|r - set the calculation frequency (default is every 0.2 seconds)',
 		'glow |cFFFFD000main|r/|cFFFFD000cd|r/|cFFFFD000interrupt|r/|cFFFFD000extra|r/|cFFFFD000blizzard|r |cFF00C000on|r/|cFFC00000off|r - glowing ability buttons on action bars',
 		'glow color |cFFF000000.0-1.0|r |cFF00FF000.1-1.0|r |cFF0000FF0.0-1.0|r - adjust the color of the ability button glow',
 		'previous |cFF00C000on|r/|cFFC00000off|r - previous ability icon',
-		'always |cFF00C000on|r/|cFFC00000off|r - show the Farseer UI without a target',
-		'cd |cFF00C000on|r/|cFFC00000off|r - use Farseer for cooldown management',
+		'always |cFF00C000on|r/|cFFC00000off|r - show the ' .. ADDON .. ' UI without a target',
+		'cd |cFF00C000on|r/|cFFC00000off|r - use ' .. ADDON .. ' for cooldown management',
 		'swipe |cFF00C000on|r/|cFFC00000off|r - show spell casting swipe animation on main ability icon',
 		'dim |cFF00C000on|r/|cFFC00000off|r - dim main ability icon when you don\'t have enough resources to use it',
 		'miss |cFF00C000on|r/|cFFC00000off|r - red border around previous ability when it fails to hit',
 		'aoe |cFF00C000on|r/|cFFC00000off|r - allow clicking main ability icon to toggle amount of targets (disables moving)',
 		'bossonly |cFF00C000on|r/|cFFC00000off|r - only use cooldowns on bosses',
-		'hidespec |cFFFFD000elemental|r/|cFFFFD000enhancement|r/|cFFFFD000restoration|r - toggle disabling Farseer for specializations',
+		'hidespec |cFFFFD000elemental|r/|cFFFFD000enhancement|r/|cFFFFD000restoration|r - toggle disabling ' .. ADDON .. ' for specializations',
 		'interrupt |cFF00C000on|r/|cFFC00000off|r - show an icon for interruptable spells',
 		'auto |cFF00C000on|r/|cFFC00000off|r  - automatically change target mode on AoE spells',
 		'ttl |cFFFFD000[seconds]|r  - time target exists in auto AoE after being hit (default is 10 seconds)',
+		'ttd |cFFFFD000[seconds]|r  - minimum enemy lifetime to use cooldowns on (default is 8 seconds, ignored on bosses)',
 		'pot |cFF00C000on|r/|cFFC00000off|r - show flasks and battle potions in cooldown UI',
 		'trinket |cFF00C000on|r/|cFFC00000off|r - show on-use trinkets in cooldown UI',
-		'|cFFFFD000reset|r - reset the location of the Farseer UI to default',
+		'|cFFFFD000reset|r - reset the location of the ' .. ADDON .. ' UI to default',
 	} do
 		print('  ' .. SLASH_Farseer1 .. ' ' .. cmd)
 	end
