@@ -1450,7 +1450,9 @@ actions+=/frost_shock
 	if FlameShock:Usable() and FlameShock:Down() and (not Hailstorm.known or (Player:Enemies() == 1 and Hailstorm:Stack() <= 3)) and Target.timeToDie > (8 * Player.haste_factor) then
 		return FlameShock
 	end
-	if Sundering:Usable() and (not DoomWinds.known or Player:Enemies() == 1 or not DoomWinds:Ready(12)) then
+	if Ascendance:Usable() then
+		UseCooldown(Ascendance)
+	elseif Sundering:Usable() and (not DoomWinds.known or Player:Enemies() == 1 or not DoomWinds:Ready(12)) then
 		UseCooldown(Sundering)
 	elseif FeralSpirit:Usable() then
 		UseCooldown(FeralSpirit)
