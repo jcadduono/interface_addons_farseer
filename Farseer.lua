@@ -1775,6 +1775,7 @@ actions.se_single_target+=/frost_shock,if=talent.icefury.enabled&buff.icefury.up
 actions.se_single_target+=/chain_harvest
 actions.se_single_target+=/static_discharge,if=talent.static_discharge.enabled
 actions.se_single_target+=/earth_elemental,if=!talent.primal_elementalist.enabled|talent.primal_elementalist.enabled&(!pet.storm_elemental.active)
+actions.se_single_target+=/chain_lightning,if=spell_targets.chain_lightning>1&buff.stormkeeper.down
 actions.se_single_target+=/lightning_bolt
 actions.se_single_target+=/flame_shock,moving=1,target_if=refreshable
 actions.se_single_target+=/flame_shock,moving=1,if=movement.distance>6
@@ -1849,6 +1850,9 @@ actions.se_single_target+=/frost_shock,moving=1
 	if Player.use_cds and EarthElemental:Usable() and (not PrimalElementalist.known or StormElemental:Down()) then
 		UseExtra(EarthElemental)
 	end
+	if ChainLightning:Usable() and Player:Enemies() > 1 and (not Stormkeeper.known or Stormkeeper:Down()) then
+		return ChainLightning
+	end
 	if LightningBolt:Usable() then
 		return LightningBolt
 	end
@@ -1893,6 +1897,7 @@ actions.single_target+=/frost_shock,if=runeforge.elemental_equilibrium.equipped&
 actions.single_target+=/chain_harvest
 actions.single_target+=/static_discharge,if=talent.static_discharge.enabled
 actions.single_target+=/earth_elemental,if=!talent.primal_elementalist.enabled|!pet.fire_elemental.active
+actions.single_target+=/chain_lightning,if=spell_targets.chain_lightning>1&buff.stormkeeper.down
 actions.single_target+=/lightning_bolt
 actions.single_target+=/flame_shock,moving=1,target_if=refreshable
 actions.single_target+=/flame_shock,moving=1,if=movement.distance>6
@@ -1985,6 +1990,9 @@ actions.single_target+=/frost_shock,moving=1
 	end
 	if Player.use_cds and EarthElemental:Usable() and (not PrimalElementalist.known or FireElemental:Down()) then
 		UseExtra(EarthElemental)
+	end
+	if ChainLightning:Usable() and Player:Enemies() > 1 and (not Stormkeeper.known or Stormkeeper:Down()) then
+		return ChainLightning
 	end
 	if LightningBolt:Usable() then
 		return LightningBolt
