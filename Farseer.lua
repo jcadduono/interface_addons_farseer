@@ -138,6 +138,7 @@ local Player = {
 	maelstrom = 0,
 	maelstrom_max = 0,
 	maelstrom_weapon = 0,
+	elemental_remains = 0,
 	moving = false,
 	movement_speed = 100,
 	last_swing_taken = 0,
@@ -203,7 +204,7 @@ farseerPanel.text.br:SetFont('Fonts\\FRIZQT__.TTF', 12, 'OUTLINE')
 farseerPanel.text.br:SetPoint('BOTTOMRIGHT', farseerPanel, 'BOTTOMRIGHT', -2.5, 3)
 farseerPanel.text.br:SetJustifyH('RIGHT')
 farseerPanel.text.center = farseerPanel.text:CreateFontString(nil, 'OVERLAY')
-farseerPanel.text.center:SetFont('Fonts\\FRIZQT__.TTF', 9, 'OUTLINE')
+farseerPanel.text.center:SetFont('Fonts\\FRIZQT__.TTF', 11, 'OUTLINE')
 farseerPanel.text.center:SetAllPoints(farseerPanel.text)
 farseerPanel.text.center:SetJustifyH('CENTER')
 farseerPanel.text.center:SetJustifyV('CENTER')
@@ -818,6 +819,7 @@ ChainLightning.maelstrom_cost = -4
 ChainLightning.consume_mw = true
 ChainLightning:AutoAoe(false)
 local EarthElemental = Ability:Add(198103, true, true)
+EarthElemental.buff_duration = 60
 EarthElemental.cooldown_duration = 300
 local FlameShock = Ability:Add(188389, false, true)
 FlameShock.buff_duration = 18
@@ -842,7 +844,6 @@ local LightningBolt = Ability:Add(188196, false, true)
 LightningBolt.mana_cost = 2
 LightningBolt.maelstrom_cost = -8
 LightningBolt.consume_mw = true
-LightningBolt:AutoAoe(true)
 local LightningShield = Ability:Add(192106, true, true)
 LightningShield.buff_duration = 3600
 LightningShield.mana_cost = 1.5
@@ -871,6 +872,7 @@ Earthquake.mana_cost = 0.6
 Earthquake.maelstrom_cost = 60
 Earthquake:AutoAoe(false)
 local FireElemental = Ability:Add(198067, true, true)
+FireElemental.buff_duration = 30
 FireElemental.cooldown_duration = 150
 FireElemental.mana_cost = 5
 local LavaBurst = Ability:Add(51505, false, true, 285452)
@@ -912,7 +914,9 @@ StaticDischarge.cooldown_duration = 30
 StaticDischarge.mana_cost = 1.25
 StaticDischarge.tick_interval = 0.5
 local StormElemental = Ability:Add(192249, true, true)
+StormElemental.buff_duration = 30
 StormElemental.cooldown_duration = 150
+StormElemental.totem_icon = 1020304
 local WindGust = Ability:Add(263806, true, true)
 WindGust.buff_duration = 30
 ------ Procs
@@ -1090,11 +1094,20 @@ local Trinket2 = InventoryItem:Add(0)
 -- Start Player API
 
 function Player:Enemies()
-	if self.ability_casting == ChainLightning and self.enemies <= 1 then
-		return 2
-	end
-	if self.ability_casting == LightningBolt and self.enemies > 1 then
-		return 1
+	if Player.spec == SPEC.ELEMENTAL then
+		if self.ability_casting == ChainLightning and self.enemies <= 2 then
+			return 3
+		end
+		if self.ability_casting == LightningBolt and self.enemies >= 3 then
+			return 2
+		end
+	elseif Player.spec == SPEC.ENHANCEMENT then
+		if self.ability_casting == ChainLightning and self.enemies <= 1 then
+			return 2
+		end
+		if self.ability_casting == LightningBolt and self.enemies >= 2 then
+			return 1
+		end
 	end
 	return self.enemies
 end
@@ -1248,8 +1261,13 @@ function Player:UpdateAbilities()
 		FlameShock.hasted_cooldown = false
 		FrostShock.cooldown_duration = 0
 		FrostShock.hasted_cooldown = false
-
 	end
+	EarthElemental.summon_spell = PrimalElementalist.known and 118323 or 188616
+	EarthElemental.npc_id = PrimalElementalist.known and 61056 or 95072
+	FireElemental.summon_spell = PrimalElementalist.known and 118291 or 188592
+	FireElemental.npc_id = PrimalElementalist.known and 61029 or 95061
+	StormElemental.summon_spell = PrimalElementalist.known and 157319 or 157299
+	StormElemental.npc_id = PrimalElementalist.known and 77942 or 77936
 
 	abilities.bySpellId = {}
 	abilities.velocity = {}
@@ -1310,6 +1328,8 @@ function Player:Update()
 	speed, max_speed = GetUnitSpeed('player')
 	self.moving = speed ~= 0
 	self.movement_speed = max_speed / 7 * 100
+	self.pet = UnitGUID('pet')
+	self.pet_active = self.pet and not UnitIsDead('pet')
 
 	trackAuras:Purge()
 	if Opt.auto_aoe then
@@ -1318,6 +1338,17 @@ function Player:Update()
 			ability:UpdateTargetsHit()
 		end
 		autoAoe:Purge()
+	end
+
+	self.elemental_remains = 0
+	if FireElemental.known then
+		self.elemental_remains = FireElemental:Remains()
+	end
+	if StormElemental.known and self.elemental_remains == 0 then
+		self.elemental_remains = StormElemental:Remains()
+	end
+	if EarthElemental.known and self.elemental_remains == 0 then
+		self.elemental_remains = EarthElemental:Remains()
 	end
 end
 
@@ -1400,15 +1431,15 @@ end
 -- Start Ability Modifications
 
 local function TotemRemains(self)
-	if (Player.time - self.last_used) < 1 then -- assume full duration immediately when dropped
-		return self:Duration()
-	end
 	local _, i, start, duration, icon
-	for i = 1, 4 do
+	for i = 1, MAX_TOTEMS do
 		_, _, start, duration, icon = GetTotemInfo(i)
-		if icon and icon == self.icon then
+		if icon and icon == (self.totem_icon or self.icon) then
 			return max(0, duration - (Player.ctime - start))
 		end
+	end
+	if (Player.time - self.last_used) < 1 then -- assume full duration immediately when dropped
+		return self:Duration()
 	end
 	return 0
 end
@@ -1421,6 +1452,22 @@ function WindfuryTotem:Remains()
 	end
 	return TotemRemains(self)
 end
+
+local function PetRemains(self)
+	if not PrimalElementalist.known then
+		return TotemRemains(self)
+	end
+	if Player.pet_active then
+		local npcId = Player.pet:match('^%w+-%d+-%d+-%d+-%d+-(%d+)')
+		if npcId and tonumber(npcId) == self.npc_id then
+			return max(0, (self.summon_time or 0) + self.buff_duration - Player.time - Player.execute_remains)
+		end
+	end
+	return 0
+end
+EarthElemental.Remains = PetRemains
+FireElemental.Remains = PetRemains
+StormElemental.Remains = PetRemains
 
 local function WeaponEnchantRemains(self)
 	local _, remainsMH, chargesMH, idMH, _, remainsOH, chargesOH, idOH = GetWeaponEnchantInfo()
@@ -1437,6 +1484,14 @@ WindfuryWeapon.Remains = WeaponEnchantRemains
 
 function ChainLightning:MaelstromCost()
 	return Ability.MaelstromCost(self) * min(5, Player:Enemies())
+end
+
+function FlameShock:Duration()
+	local duration = Ability.Duration(self)
+	if FireElemental.known and FireElemental:Up() then
+		duration = duration * 2
+	end
+	return duration
 end
 
 function FlameShock:Remains()
@@ -2409,7 +2464,7 @@ end
 
 function UI:UpdateDisplay()
 	timer.display = 0
-	local dim, text_tl
+	local dim, text_tl, text_center
 	if Opt.dimmer then
 		dim = not ((not Player.main) or
 		           (Player.main.spellId and IsUsableSpell(Player.main.spellId)) or
@@ -2418,8 +2473,12 @@ function UI:UpdateDisplay()
 	if MaelstromWeapon.known then
 		text_tl = Player.maelstrom_weapon
 	end
+	if Player.elemental_remains > 0 then
+		text_center = format('%.1fs', Player.elemental_remains)
+	end
 	farseerPanel.dimmer:SetShown(dim)
 	farseerPanel.text.tl:SetText(text_tl)
+	farseerPanel.text.center:SetText(text_center)
 	--farseerPanel.text.bl:SetText(format('%.1fs', Target.timeToDie))
 end
 
@@ -2519,6 +2578,16 @@ function events:COMBAT_LOG_EVENT_UNFILTERED()
 
 	if srcGUID ~= Player.guid then
 		return
+	end
+
+	if eventType == 'SPELL_SUMMON' then
+		if spellId == EarthElemental.summon_spell then
+			EarthElemental.summon_time = timeStamp
+		elseif spellId == FireElemental.summon_spell then
+			FireElemental.summon_time = timeStamp
+		elseif spellId == StormElemental.summon_spell then
+			StormElemental.summon_time = timeStamp
+		end
 	end
 
 	local ability = spellId and abilities.bySpellId[spellId]
