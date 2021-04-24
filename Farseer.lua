@@ -435,6 +435,7 @@ function Ability:Add(spellId, buff, player, spellId2)
 		hasted_cooldown = false,
 		hasted_ticks = false,
 		known = false,
+		rank = 0,
 		mana_cost = 0,
 		maelstrom_cost = 0,
 		cooldown_duration = 0,
@@ -990,6 +991,9 @@ PrimordialWave.mana_cost = 3
 PrimordialWave:SetVelocity(45)
 PrimordialWave.buff = Ability:Add(327164, true, true)
 PrimordialWave.buff.buff_duration = 15
+-- Soulbind conduits
+local CallOfFlame = Ability:Add(338303, true, true)
+CallOfFlame.conduit_id = 104
 -- Legendary effects
 local DoomWinds = Ability:Add(335902, true, true, 335903)
 DoomWinds.buff_duration = 12
@@ -1224,6 +1228,7 @@ function Player:UpdateAbilities()
 				node = C_Soulbinds.GetNode(node)
 				if node and node.state == 3 then
 					ability.known = true
+					ability.rank = node.conduitRank
 				end
 			end
 		end
@@ -1460,7 +1465,7 @@ local function PetRemains(self)
 	if Player.pet_active then
 		local npcId = Player.pet:match('^%w+-%d+-%d+-%d+-%d+-(%d+)')
 		if npcId and tonumber(npcId) == self.npc_id then
-			return max(0, (self.summon_time or 0) + self.buff_duration - Player.time - Player.execute_remains)
+			return max(0, (self.summon_time or 0) + self:Duration() - Player.time - Player.execute_remains)
 		end
 	end
 	return 0
@@ -1468,6 +1473,15 @@ end
 EarthElemental.Remains = PetRemains
 FireElemental.Remains = PetRemains
 StormElemental.Remains = PetRemains
+
+function FireElemental:Duration()
+	local duration = self.buff_duration
+	if CallOfFlame.known then
+		duration = duration * (1.35 + (CallOfFlame.rank - 1) * 0.01)
+	end
+	return duration
+end
+StormElemental.Duration = FireElemental.Duration
 
 local function WeaponEnchantRemains(self)
 	local _, remainsMH, chargesMH, idMH, _, remainsOH, chargesOH, idOH = GetWeaponEnchantInfo()
