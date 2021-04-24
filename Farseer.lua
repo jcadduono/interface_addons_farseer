@@ -1202,11 +1202,11 @@ function Player:InArenaOrBattleground()
 end
 
 function Player:UpdateAbilities()
-	Player.mana_base = BaseMana[UnitLevel('player')]
-	Player.maelstrom_max = UnitPowerMax('player', 11)
+	self.mana_base = BaseMana[UnitLevel('player')]
+	self.maelstrom_max = UnitPowerMax('player', 11)
+	self.rescan_abilities = false
 
 	local _, ability, spellId, node
-
 	for _, ability in next, abilities.all do
 		ability.known = false
 		for _, spellId in next, ability.spellIds do
@@ -1226,9 +1226,13 @@ function Player:UpdateAbilities()
 			node = C_Soulbinds.FindNodeIDActuallyInstalled(C_Soulbinds.GetActiveSoulbindID(), ability.conduit_id)
 			if node then
 				node = C_Soulbinds.GetNode(node)
-				if node and node.state == 3 then
-					ability.known = true
-					ability.rank = node.conduitRank
+				if node then
+					if node.conduitID == 0 then
+						self.rescan_abilities = true -- rescan on next target, conduit data has not finished loading
+					else
+						ability.known = node.state == 3
+						ability.rank = node.conduitRank
+					end
 				end
 			end
 		end
@@ -2674,6 +2678,9 @@ end
 
 function events:PLAYER_TARGET_CHANGED()
 	Target:Update()
+	if Player.rescan_abilities then
+		Player:UpdateAbilities()
+	end
 end
 
 function events:UNIT_FACTION(unitID)
