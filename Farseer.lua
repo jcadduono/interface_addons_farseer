@@ -1620,7 +1620,7 @@ actions.precombat+=/potion
 		if ElementalBlast:Usable() then
 			return ElementalBlast
 		end
-		if LavaBurst:Usable() and not ElementalBlast.known then
+		if LavaBurst:Usable() and not ElementalBlast.known and LavaSurge:Remains() < 3 then
 			return LavaBurst
 		end
 		if Opt.pot and Target.boss and not Player:InArenaOrBattleground() and PotionOfSpectralIntellect:Usable() then
@@ -1778,10 +1778,10 @@ actions.se_single_target=flame_shock,target_if=(remains<=gcd)&(buff.lava_surge.u
 actions.se_single_target+=/elemental_blast,if=talent.elemental_blast.enabled
 actions.se_single_target+=/stormkeeper,if=talent.stormkeeper.enabled&(maelstrom<44)
 actions.se_single_target+=/echoing_shock,if=talent.echoing_shock.enabled
-actions.se_single_target+=/lava_burst,if=buff.wind_gust.stack<18|buff.lava_surge.up
+actions.se_single_target+=/lava_burst,if=(!talent.echo_of_the_elements.enabled|cooldown.lava_burst.charges_fractional>1.5)&buff.wind_gust.stack<18|buff.lava_surge.up&dot.flame_shock.remains>travel_time
 actions.se_single_target+=/lightning_bolt,if=buff.stormkeeper.up
 actions.se_single_target+=/earthquake,if=buff.echoes_of_great_sundering.up
-actions.se_single_target+=/earthquake,if=(spell_targets.chain_lightning>1)&(!dot.flame_shock.refreshable)
+actions.se_single_target+=/earthquake,if=!runeforge.echoes_of_great_sundering.equipped&spell_targets.chain_lightning>1&!dot.flame_shock.refreshable
 actions.se_single_target+=/earth_shock,if=spell_targets.chain_lightning<2&maelstrom>=60&(buff.wind_gust.stack<20|maelstrom>90)|(runeforge.echoes_of_great_sundering.equipped&!buff.echoes_of_great_sundering.up)
 actions.se_single_target+=/lightning_bolt,if=(buff.stormkeeper.remains<1.1*gcd*buff.stormkeeper.stack|buff.stormkeeper.up&buff.master_of_the_elements.up)
 actions.se_single_target+=/frost_shock,if=talent.icefury.enabled&talent.master_of_the_elements.enabled&buff.icefury.up&buff.master_of_the_elements.up
@@ -1811,7 +1811,7 @@ actions.se_single_target+=/frost_shock,moving=1
 	if EchoingShock:Usable() then
 		return EchoingShock
 	end
-	if LavaBurst:Usable() and (LavaSurge:Up() or (WindGust.known and WindGust:Stack() < 18)) then
+	if LavaBurst:Usable() and (((not EchoOfTheElements.known or LavaBurst:ChargesFractional() > 1.5) and WindGust:Stack() < 18) or (LavaSurge:Up() and FlameShock:Remains() > LavaBurst:TravelTime())) then
 		return LavaBurst
 	end
 	if Stormkeeper.known and LightningBolt:Usable() and Stormkeeper:Up() then
@@ -1821,7 +1821,7 @@ actions.se_single_target+=/frost_shock,moving=1
 		if EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up() then
 			return Earthquake
 		end
-		if Player:Enemies() > 1 and not FlameShock:Refreshable() then
+		if not EchoesOfGreatSundering.known and Player:Enemies() > 1 and not FlameShock:Refreshable() then
 			return Earthquake
 		end
 	end
