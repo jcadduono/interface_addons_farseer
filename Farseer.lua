@@ -858,6 +858,7 @@ WindShear.cooldown_duration = 12
 local ElementalBlast = Ability:Add(117014, false, true)
 ElementalBlast.cooldown_duration = 12
 ElementalBlast.mana_cost = 2.75
+ElementalBlast.maelstrom_cost = -30
 local Stormkeeper = Ability:Add({191634, 320137}, true, true)
 Stormkeeper.buff_duration = 15
 Stormkeeper.cooldown_duration = 60
@@ -1132,6 +1133,10 @@ function Player:Maelstrom()
 	return self.maelstrom
 end
 
+function Player:MaelstromDeficit()
+	return self.maelstrom_max - self.maelstrom
+end
+
 function Player:UnderAttack()
 	return (Player.time - self.last_swing_taken) < 3
 end
@@ -1203,7 +1208,6 @@ end
 
 function Player:UpdateAbilities()
 	self.mana_base = BaseMana[UnitLevel('player')]
-	self.maelstrom_max = UnitPowerMax('player', 11)
 	self.rescan_abilities = false
 
 	local _, ability, spellId, node
@@ -1327,6 +1331,7 @@ function Player:Update()
 	self.mana = min(max(self.mana, 0), self.mana_max)
 	if self.spec == SPEC.ELEMENTAL then
 		self.maelstrom = UnitPower('player', 11)
+		self.maelstrom_max = UnitPowerMax('player', 11)
 		if self.ability_casting then
 			self.maelstrom = self.maelstrom - self.ability_casting:MaelstromCost()
 		end
@@ -1557,6 +1562,13 @@ function WindGust:Remains()
 	return StormElemental:Remains()
 end
 
+function MasterOfTheElements:Remains()
+	if LavaBurst:Casting() then
+		return self:Duration()
+	end
+	return Ability.Remains(self)
+end
+
 function StaticDischarge:Usable()
 	if LightningShield:Down() then
 		return false
@@ -1776,10 +1788,9 @@ APL[SPEC.ELEMENTAL].se_single_target = function(self)
 --[[
 actions.se_single_target=flame_shock,target_if=(remains<=gcd)&(buff.lava_surge.up|!buff.bloodlust.up)
 actions.se_single_target+=/elemental_blast,if=talent.elemental_blast.enabled
-actions.se_single_target+=/stormkeeper,if=talent.stormkeeper.enabled&(maelstrom<44)
+actions.se_single_target+=/stormkeeper,if=talent.stormkeeper.enabled&maelstrom<44
 actions.se_single_target+=/echoing_shock,if=talent.echoing_shock.enabled
-actions.se_single_target+=/lava_burst,if=(!talent.echo_of_the_elements.enabled|cooldown.lava_burst.charges_fractional>1.5)&buff.wind_gust.stack<18|buff.lava_surge.up&dot.flame_shock.remains>travel_time
-actions.se_single_target+=/lightning_bolt,if=buff.stormkeeper.up
+actions.se_single_target+=/lava_burst,if=maelstrom.max-maelstrom>10&((!talent.echo_of_the_elements.enabled|cooldown.lava_burst.charges_fractional>1.5)&buff.wind_gust.stack<18|buff.lava_surge.up&dot.flame_shock.remains>travel_time)
 actions.se_single_target+=/earthquake,if=buff.echoes_of_great_sundering.up
 actions.se_single_target+=/earthquake,if=!runeforge.echoes_of_great_sundering.equipped&spell_targets.chain_lightning>1&!dot.flame_shock.refreshable
 actions.se_single_target+=/earth_shock,if=spell_targets.chain_lightning<2&maelstrom>=60&(buff.wind_gust.stack<20|maelstrom>90)|(runeforge.echoes_of_great_sundering.equipped&!buff.echoes_of_great_sundering.up)
@@ -1811,11 +1822,8 @@ actions.se_single_target+=/frost_shock,moving=1
 	if EchoingShock:Usable() then
 		return EchoingShock
 	end
-	if LavaBurst:Usable() and (((not EchoOfTheElements.known or LavaBurst:ChargesFractional() > 1.5) and WindGust:Stack() < 18) or (LavaSurge:Up() and FlameShock:Remains() > LavaBurst:TravelTime())) then
+	if LavaBurst:Usable() and Player:MaelstromDeficit() > 10 and (((not EchoOfTheElements.known or LavaBurst:ChargesFractional() > 1.5) and WindGust:Stack() < 18) or (LavaSurge:Up() and FlameShock:Remains() > LavaBurst:TravelTime())) then
 		return LavaBurst
-	end
-	if Stormkeeper.known and LightningBolt:Usable() and Stormkeeper:Up() then
-		return LightningBolt
 	end
 	if Earthquake:Usable() then
 		if EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up() then
