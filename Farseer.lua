@@ -91,6 +91,8 @@ local function InitOpts()
 		cd_ttd = 8,
 		pot = false,
 		trinket = true,
+		shield = true,
+		earth = true,
 	})
 end
 
@@ -1602,6 +1604,7 @@ local APL = {
 }
 
 APL[SPEC.ELEMENTAL].main = function(self)
+	Player.use_cds = Opt.cooldown and (Target.boss or Target.player or (not Opt.boss_only and Target.timeToDie > Opt.cd_ttd) or (AscendanceFlame.known and AscendanceFlame:Up()) or (FireElemental.known and FireElemental:Up()) or (StormElemental.known and StormElemental:Up()))
 	if Player:TimeInCombat() == 0 then
 --[[
 actions.precombat=flask
@@ -1620,13 +1623,13 @@ actions.precombat+=/potion
 		if Opt.pot and not Player:InArenaOrBattleground() and SpectralFlaskOfPower:Usable() and SpectralFlaskOfPower.buff:Remains() < 300 then
 			UseCooldown(GreaterFlaskOfEndlessFathoms)
 		end
-		if LightningShield:Usable() and LightningShield:Remains() < 300 then
+		if Opt.shield and LightningShield:Usable() and LightningShield:Remains() < 300 then
 			UseCooldown(LightningShield)
 		end
-		if EarthElemental:Usable() and not PrimalElementalist.known then
+		if Opt.earth and Player.use_cds and EarthElemental:Usable() and not PrimalElementalist.known then
 			UseExtra(EarthElemental)
 		end
-		if Stormkeeper:Usable() then
+		if Player.use_cds and Stormkeeper:Usable() then
 			UseCooldown(Stormkeeper)
 		end
 		if ElementalBlast:Usable() then
@@ -1661,7 +1664,6 @@ actions+=/run_action_list,name=aoe,if=active_enemies>2&(spell_targets.chain_ligh
 actions+=/run_action_list,name=single_target,if=!talent.storm_elemental.enabled&active_enemies<=2
 actions+=/run_action_list,name=se_single_target,if=talent.storm_elemental.enabled&active_enemies<=2
 ]]
-	Player.use_cds = Opt.cooldown and (Target.boss or Target.player or (not Opt.boss_only and Target.timeToDie > Opt.cd_ttd) or (AscendanceFlame.known and AscendanceFlame:Up()) or (FireElemental.known and FireElemental:Up()) or (StormElemental.known and StormElemental:Up()))
 	if Player.moving and SpiritwalkersGrace:Usable() then
 		UseExtra(SpiritwalkersGrace)
 	end
@@ -1739,7 +1741,7 @@ actions.aoe+=/frost_shock,moving=1
 	if EchoesOfGreatSundering.known and EarthShock:Usable() and EchoesOfGreatSundering:Down() then
 		return EarthShock
 	end
-	if Player.use_cds and DeeptremorStone.known and EarthElemental:Usable() and (not PrimalElementalist.known or (StormElemental.known and StormElemental:Down()) or (FireElemental.known and FireElemental:Down())) then
+	if Player.use_cds and EarthElemental:Usable() and (DeeptremorStone.known or Player:UnderAttack()) and (not PrimalElementalist.known or (StormElemental.known and StormElemental:Down() and not StormElemental:Ready(60)) or (FireElemental.known and FireElemental:Down() and not FireElemental:Ready(60))) then
 		UseExtra(EarthElemental)
 	end
 	if FlameShock:Usable() and FlameShock:Refreshable() and Target.timeToDie > FlameShock:Remains() and Player:Enemies() <= 5 and FlameShock:Ticking() < 3 then
@@ -1871,7 +1873,7 @@ actions.se_single_target+=/frost_shock,moving=1
 	if StaticDischarge.known and LightningShield:Usable() and LightningShield:Down() then
 		UseExtra(LightningShield)
 	end
-	if Player.use_cds and EarthElemental:Usable() and (not PrimalElementalist.known or StormElemental:Down()) then
+	if Opt.earth and Player.use_cds and EarthElemental:Usable() and (not PrimalElementalist.known or (StormElemental:Down() and not StormElemental:Ready(60))) then
 		UseExtra(EarthElemental)
 	end
 	if ChainLightning:Usable() and Player:Enemies() > 1 and (not Stormkeeper.known or Stormkeeper:Down()) then
@@ -2012,7 +2014,7 @@ actions.single_target+=/frost_shock,moving=1
 	if StaticDischarge.known and LightningShield:Usable() and LightningShield:Down() then
 		UseExtra(LightningShield)
 	end
-	if Player.use_cds and EarthElemental:Usable() and (not PrimalElementalist.known or FireElemental:Down()) then
+	if Opt.earth and Player.use_cds and EarthElemental:Usable() and (not PrimalElementalist.known or (FireElemental:Down() and not FireElemental:Ready(60))) then
 		UseExtra(EarthElemental)
 	end
 	if ChainLightning:Usable() and Player:Enemies() > 1 and (not Stormkeeper.known or Stormkeeper:Down()) then
@@ -2035,6 +2037,7 @@ actions.single_target+=/frost_shock,moving=1
 end
 
 APL[SPEC.ENHANCEMENT].main = function(self)
+	Player.use_cds = Opt.cooldown and (Target.boss or Target.player or (not Opt.boss_only and Target.timeToDie > Opt.cd_ttd) or AscendanceAir:Up() or FeralSpirit:Up())
 	if Player:HealthPct() < 60 and Player.maelstrom_weapon >= 5 and HealingSurge:Usable() then
 		UseExtra(HealingSurge)
 	end
@@ -2069,8 +2072,11 @@ actions.precombat+=/snapshot_stats
 		if WindfuryTotem:Usable() and WindfuryTotem:Remains() < 30 and (not DoomWinds.known or not DoomWinds:Ready(6)) then
 			UseCooldown(WindfuryTotem)
 		end
-		if LightningShield:Usable() and LightningShield:Remains() < 300 then
+		if Opt.shield and LightningShield:Usable() and LightningShield:Remains() < 300 then
 			UseCooldown(LightningShield)
+		end
+		if Opt.earth and Player.use_cds and EarthElemental:Usable() and not PrimalElementalist.known then
+			UseExtra(EarthElemental)
 		end
 		if Hailstorm.known and FrostShock:Usable() and Hailstorm:Stack() >= 5 then
 			return FrostShock
@@ -2125,7 +2131,6 @@ actions+=/flame_shock,target_if=min:remains,if=remains<(10*spell_haste)&target.t
 actions+=/windfury_totem,if=buff.windfury_totem.remains<30
 actions+=/frost_shock
 ]]
-	Player.use_cds = Opt.cooldown and (Target.boss or Target.player or (not Opt.boss_only and Target.timeToDie > Opt.cd_ttd) or AscendanceAir:Up() or FeralSpirit:Up())
 	if Player.use_cds and ((not FeralSpirit.known and not AscendanceAir.known) or FeralSpirit:Remains() > 6 or AscendanceAir:Remains() > 6) then
 		if Opt.trinket then
 			if Trinket1:Usable() then
@@ -2217,7 +2222,7 @@ actions+=/frost_shock
 	if LightningShield:Usable() and LightningShield:Remains() < 30 then
 		UseExtra(LightningShield)
 	end
-	if EarthElemental:Usable() then
+	if Opt.earth and EarthElemental:Usable() then
 		UseExtra(EarthElemental)
 	end
 	if WindfuryTotem:Usable() and WindfuryTotem:Remains() < 30 then
@@ -3148,6 +3153,18 @@ SlashCmdList[ADDON] = function(msg, editbox)
 		end
 		return Status('Show on-use trinkets in cooldown UI', Opt.trinket)
 	end
+	if startsWith(msg[1], 'sh') then
+		if msg[2] then
+			Opt.shield = msg[2] == 'on'
+		end
+		return Status('Show Lightning Shield refresh reminder out of combat', Opt.shield)
+	end
+	if startsWith(msg[1], 'ea') then
+		if msg[2] then
+			Opt.earth = msg[2] == 'on'
+		end
+		return Status('Use Earth Elemental as a DPS cooldown (still uses after melee hits)', Opt.earth)
+	end
 	if msg[1] == 'reset' then
 		farseerPanel:ClearAllPoints()
 		farseerPanel:SetPoint('CENTER', 0, -169)
@@ -3179,6 +3196,8 @@ SlashCmdList[ADDON] = function(msg, editbox)
 		'ttd |cFFFFD000[seconds]|r  - minimum enemy lifetime to use cooldowns on (default is 8 seconds, ignored on bosses)',
 		'pot |cFF00C000on|r/|cFFC00000off|r - show flasks and battle potions in cooldown UI',
 		'trinket |cFF00C000on|r/|cFFC00000off|r - show on-use trinkets in cooldown UI',
+		'shield |cFF00C000on|r/|cFFC00000off|r - show Lightning Shield refresh reminder out of combat',
+		'earth |cFF00C000on|r/|cFFC00000off|r - use Earth Elemental as a DPS cooldown (still uses after melee hits)',
 		'|cFFFFD000reset|r - reset the location of the ' .. ADDON .. ' UI to default',
 	} do
 		print('  ' .. SLASH_Farseer1 .. ' ' .. cmd)
