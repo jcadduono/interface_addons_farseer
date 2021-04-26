@@ -1693,13 +1693,13 @@ APL[SPEC.ELEMENTAL].aoe = function(self)
 actions.aoe=earthquake,if=buff.echoing_shock.up
 actions.aoe+=/chain_harvest
 actions.aoe+=/stormkeeper,if=talent.stormkeeper.enabled
-actions.aoe+=/flame_shock,if=active_dot.flame_shock<3&active_enemies<=5|runeforge.skybreakers_fiery_demise.equipped,target_if=refreshable
-actions.aoe+=/flame_shock,if=!active_dot.flame_shock
+actions.aoe+=/flame_shock,if=!active_dot.flame_shock|runeforge.skybreakers_fiery_demise.equipped,target_if=refreshable
 actions.aoe+=/echoing_shock,if=talent.echoing_shock.enabled&maelstrom>=60
 actions.aoe+=/ascendance,if=talent.ascendance.enabled&(!pet.storm_elemental.active)&(!talent.icefury.enabled|!buff.icefury.up&!cooldown.icefury.up)
 actions.aoe+=/liquid_magma_totem,if=talent.liquid_magma_totem.enabled
 actions.aoe+=/earth_shock,if=runeforge.echoes_of_great_sundering.equipped&!buff.echoes_of_great_sundering.up
 actions.aoe+=/earth_elemental,if=runeforge.deeptremor_stone.equipped&(!talent.primal_elementalist.enabled|(!pet.storm_elemental.active&!pet.fire_elemental.active))
+actions.aoe+=/flame_shock,if=active_dot.flame_shock<3&active_enemies<=5,target_if=refreshable
 actions.aoe+=/lava_burst,target_if=dot.flame_shock.remains,if=spell_targets.chain_lightning<4|buff.lava_surge.up|(talent.master_of_the_elements.enabled&!buff.master_of_the_elements.up&maelstrom>=60)
 # Try to game Earthquake with Master of the Elements buff when fighting 3 targets. Don't overcap Maelstrom!
 actions.aoe+=/earthquake,if=!talent.master_of_the_elements.enabled|buff.stormkeeper.up|maelstrom>=(100-4*spell_targets.chain_lightning)|buff.master_of_the_elements.up|spell_targets.chain_lightning>3
@@ -1724,13 +1724,8 @@ actions.aoe+=/frost_shock,moving=1
 	if Player.use_cds and Stormkeeper:Usable() then
 		UseCooldown(Stormkeeper)
 	end
-	if FlameShock:Usable() and FlameShock:Refreshable() then
-		if FlameShock:Ticking() == 0 then
-			return FlameShock
-		end
-		if Target.timeToDie > FlameShock:Remains() and (SkybreakersFieryDemise.known or (Player:Enemies() <= 5 and FlameShock:Ticking() < 3)) then
-			return FlameShock
-		end
+	if FlameShock:Usable() and FlameShock:Refreshable() and Target.timeToDie > FlameShock:Remains() and (FlameShock:Ticking() == 0 or SkybreakersFieryDemise.known) then
+		return FlameShock
 	end
 	if EchoingShock:Usable() and Player:Maelstrom() >= 60 then
 		return EchoingShock
@@ -1746,6 +1741,9 @@ actions.aoe+=/frost_shock,moving=1
 	end
 	if Player.use_cds and DeeptremorStone.known and EarthElemental:Usable() and (not PrimalElementalist.known or (StormElemental.known and StormElemental:Down()) or (FireElemental.known and FireElemental:Down())) then
 		UseExtra(EarthElemental)
+	end
+	if FlameShock:Usable() and FlameShock:Refreshable() and Target.timeToDie > FlameShock:Remains() and Player:Enemies() <= 5 and FlameShock:Ticking() < 3 then
+		return FlameShock
 	end
 	if LavaBurst:Usable() and FlameShock:Remains() > (LavaBurst:CastTime() + LavaBurst:TravelTime()) and (Player:Enemies() < 4 or LavaSurge:Up() or (MasterOfTheElements.known and MasterOfTheElements:Down() and Player:Maelstrom() >= 60)) then
 		return LavaBurst
