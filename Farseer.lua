@@ -830,6 +830,7 @@ FlameShock.cooldown_duration = 6
 FlameShock.mana_cost = 1.5
 FlameShock.tick_interval = 2
 FlameShock.hasted_ticks = true
+FlameShock:TrackAuras()
 local FlametongueWeapon = Ability:Add(318038, true, true)
 FlametongueWeapon.enchant_id = 5400
 local FrostShock = Ability:Add(196840, false, true)
@@ -2003,7 +2004,7 @@ actions.single_target+=/frost_shock,moving=1
 	if LavaBurst:Usable() and (not MasterOfTheElements.known or MasterOfTheElements:Down()) then
 		return LavaBurst
 	end
-	if FlameShock:Refreshable() then
+	if FlameShock:Usable() and FlameShock:Refreshable() then
 		return FlameShock
 	end
 	if Earthquake:Usable() and Player:Enemies() > 1 and (not EchoesOfGreatSundering.known or EchoesOfGreatSundering:Up()) then
@@ -2034,9 +2035,6 @@ actions.single_target+=/frost_shock,moving=1
 		return LightningBolt
 	end
 	if Player.moving then
-		if FlameShock:Usable() and FlameShock:Refreshable() then
-			return FlameShock
-		end
 		if LightningShield:Usable() and LightningShield:Remains() < 30 then
 			UseExtra(LightningShield)
 		end
