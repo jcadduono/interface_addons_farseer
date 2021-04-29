@@ -1452,7 +1452,7 @@ local function TotemRemains(self)
 	for i = 1, MAX_TOTEMS do
 		_, _, start, duration, icon = GetTotemInfo(i)
 		if icon and icon == (self.totem_icon or self.icon) then
-			return max(0, duration - (Player.ctime - start))
+			return max(0, start + duration - Player.ctime - Player.execute_remains)
 		end
 	end
 	if (Player.time - self.last_used) < 1 then -- assume full duration immediately when dropped
@@ -1569,7 +1569,11 @@ function MasterOfTheElements:Remains()
 	if LavaBurst:Casting() then
 		return self:Duration()
 	end
-	return Ability.Remains(self)
+	local remains = Ability.Remains(self)
+	if remains > 0 and (LightningBolt:Casting() or ChainLightning:Casting() or (Icefury.known and Icefury:Casting())) then
+		return 0
+	end
+	return remains
 end
 
 function StaticDischarge:Usable()
@@ -1630,7 +1634,7 @@ actions.precombat+=/potion
 		if Opt.earth and Player.use_cds and EarthElemental:Usable() and not PrimalElementalist.known then
 			UseExtra(EarthElemental)
 		end
-		if Player.use_cds and Stormkeeper:Usable() then
+		if Player.use_cds and Stormkeeper:Usable() and Stormkeeper:Down() then
 			UseCooldown(Stormkeeper)
 		end
 		if ElementalBlast:Usable() then
@@ -1724,7 +1728,7 @@ actions.aoe+=/frost_shock,moving=1
 	if Player.use_cds and ChainHarvest:Usable() then
 		UseCooldown(ChainHarvest)
 	end
-	if Player.use_cds and Stormkeeper:Usable() then
+	if Player.use_cds and Stormkeeper:Usable() and Stormkeeper:Down() then
 		UseCooldown(Stormkeeper)
 	end
 	if FlameShock:Usable() and FlameShock:Refreshable() and Target.timeToDie > FlameShock:Remains() and (FlameShock:Ticking() == 0 or SkybreakersFieryDemise.known) then
@@ -1817,7 +1821,7 @@ actions.se_single_target+=/frost_shock,moving=1
 	if ElementalBlast:Usable() then
 		return ElementalBlast
 	end
-	if Player.use_cds and Stormkeeper:Usable() and Player:Maelstrom() < 44 then
+	if Player.use_cds and Stormkeeper:Usable() and Player:Maelstrom() < 44 and Stormkeeper:Down() then
 		UseCooldown(Stormkeeper)
 	end
 	if EchoingShock:Usable() then
@@ -1949,7 +1953,7 @@ actions.single_target+=/frost_shock,moving=1
 			return LavaBurst
 		end
 	end
-	if Player.use_cds and Stormkeeper:Usable() and Player:Maelstrom() < 44 then
+	if Player.use_cds and Stormkeeper:Usable() and Player:Maelstrom() < 44 and Stormkeeper:Down() then
 		UseCooldown(Stormkeeper)
 	end
 	if EchoingShock.known then
