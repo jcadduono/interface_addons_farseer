@@ -1698,39 +1698,34 @@ end
 
 APL[SPEC.ELEMENTAL].aoe = function(self)
 --[[
-actions.aoe=earthquake,if=buff.echoing_shock.up|buff.echoes_of_great_sundering.up&maelstrom>=(maelstrom.max-4*spell_targets.chain_lightning)
+actions.aoe=earthquake,if=buff.echoing_shock.up|buff.echoes_of_great_sundering.up&(maelstrom>=(maelstrom.max-4*spell_targets.chain_lightning)|buff.echoes_of_great_sundering.remains<2*spell_haste|buff.master_of_the_elements.up)
 actions.aoe+=/chain_harvest
-actions.aoe+=/stormkeeper,if=talent.stormkeeper.enabled
 actions.aoe+=/flame_shock,if=!active_dot.flame_shock|runeforge.skybreakers_fiery_demise.equipped,target_if=refreshable
 actions.aoe+=/echoing_shock,if=talent.echoing_shock.enabled&maelstrom>=60
 actions.aoe+=/ascendance,if=talent.ascendance.enabled&(!pet.storm_elemental.active)&(!talent.icefury.enabled|!buff.icefury.up&!cooldown.icefury.up)
 actions.aoe+=/liquid_magma_totem,if=talent.liquid_magma_totem.enabled
 actions.aoe+=/earth_shock,if=runeforge.echoes_of_great_sundering.equipped&!buff.echoes_of_great_sundering.up
 actions.aoe+=/earth_elemental,if=runeforge.deeptremor_stone.equipped&(!talent.primal_elementalist.enabled|(!pet.storm_elemental.active&!pet.fire_elemental.active))
+actions.aoe+=/lava_burst,target_if=max:dot.flame_shock.remains,if=dot.flame_shock.remains>cast_time+travel_time&buff.master_of_the_elements.down&(buff.lava_surge.up|talent.master_of_the_elements.enabled&maelstrom>=60|buff.stormkeeper.up&maelstrom<50)
 actions.aoe+=/flame_shock,if=active_dot.flame_shock<3&active_enemies<=5,target_if=refreshable
-actions.aoe+=/lava_burst,target_if=dot.flame_shock.remains,if=spell_targets.chain_lightning<4|buff.lava_surge.up|(talent.master_of_the_elements.enabled&!buff.master_of_the_elements.up&maelstrom>=60)
 # Try to game Earthquake with Master of the Elements buff when fighting 3 targets. Don't overcap Maelstrom!
-actions.aoe+=/earthquake,if=!talent.master_of_the_elements.enabled|buff.stormkeeper.up|maelstrom>=(maelstrom.max-4*spell_targets.chain_lightning)|buff.master_of_the_elements.up|spell_targets.chain_lightning>3
+actions.aoe+=/earthquake,if=!talent.master_of_the_elements.enabled|buff.stormkeeper.up|buff.master_of_the_elements.up|spell_targets.chain_lightning>3|maelstrom>=(maelstrom.max-4*spell_targets.chain_lightning)
 # Make sure you don't lose a Stormkeeper buff.
-actions.aoe+=/chain_lightning,if=buff.stormkeeper.remains<3*gcd*buff.stormkeeper.stack
-# Only cast Lava Burst on three targets if it is an instant and Storm Elemental is NOT active.
-actions.aoe+=/lava_burst,if=buff.lava_surge.up&spell_targets.chain_lightning<4&(!pet.storm_elemental.active)&dot.flame_shock.ticking
+actions.aoe+=/chain_lightning,if=buff.stormkeeper.up&(maelstrom<60&buff.master_of_the_elements.up|buff.stormkeeper.remains<3*gcd*buff.stormkeeper.stack)
 # Use Elemental Blast against up to 3 targets as long as Storm Elemental is not active.
-actions.aoe+=/elemental_blast,if=talent.elemental_blast.enabled&spell_targets.chain_lightning<5&(!pet.storm_elemental.active)
+actions.aoe+=/stormkeeper
+actions.aoe+=/elemental_blast,if=spell_targets.chain_lightning<5&!pet.storm_elemental.active
 actions.aoe+=/lava_beam,if=talent.ascendance.enabled
 actions.aoe+=/chain_lightning
 actions.aoe+=/lava_burst,moving=1,if=buff.lava_surge.up&cooldown_react
 actions.aoe+=/flame_shock,moving=1,target_if=refreshable
 actions.aoe+=/frost_shock,moving=1
 ]]
-	if Earthquake:Usable() and ((EchoingShock.known and EchoingShock:Up()) or (EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up() and Player:MaelstromDeficit() < (4 * Player:Enemies()))) then
+	if Earthquake:Usable() and ((EchoingShock.known and EchoingShock:Up()) or (EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up() and (Player:MaelstromDeficit() < (4 * Player:Enemies()) or EchoesOfGreatSundering:Remains() < (2 * Player.haste_factor) or (MasterOfTheElements.known and MasterOfTheElements:Up())))) then
 		return Earthquake
 	end
 	if Player.use_cds and ChainHarvest:Usable() then
 		UseCooldown(ChainHarvest)
-	end
-	if Player.use_cds and Stormkeeper:Usable() and Stormkeeper:Down() then
-		UseCooldown(Stormkeeper)
 	end
 	if FlameShock:Usable() and FlameShock:Refreshable() and Target.timeToDie > FlameShock:Remains() and (FlameShock:Ticking() == 0 or SkybreakersFieryDemise.known) then
 		return FlameShock
@@ -1750,20 +1745,20 @@ actions.aoe+=/frost_shock,moving=1
 	if Player.use_cds and EarthElemental:Usable() and (DeeptremorStone.known or Player:UnderAttack()) and (not PrimalElementalist.known or (StormElemental.known and StormElemental:Down() and not StormElemental:Ready(60)) or (FireElemental.known and FireElemental:Down() and not FireElemental:Ready(60))) then
 		UseExtra(EarthElemental)
 	end
+	if LavaBurst:Usable() and FlameShock:Remains() > (LavaBurst:CastTime() + LavaBurst:TravelTime()) and (not MasterOfTheElements.known or MasterOfTheElements:Down()) and (LavaSurge:Up() or (MasterOfTheElements.known and Player:Maelstrom() >= 60) or (Stormkeeper.known and Stormkeeper:Up() and Player:Maelstrom() < 50)) then
+		return LavaBurst
+	end
 	if FlameShock:Usable() and FlameShock:Refreshable() and Target.timeToDie > FlameShock:Remains() and Player:Enemies() <= 5 and FlameShock:Ticking() < 3 then
 		return FlameShock
 	end
-	if LavaBurst:Usable() and FlameShock:Remains() > (LavaBurst:CastTime() + LavaBurst:TravelTime()) and (Player:Enemies() < 4 or LavaSurge:Up() or (MasterOfTheElements.known and MasterOfTheElements:Down() and Player:Maelstrom() >= 60)) then
-		return LavaBurst
-	end
-	if Earthquake:Usable() and (not MasterOfTheElements.known or (Stormkeeper.known and Stormkeeper:Up()) or Player:MaelstromDeficit() < (4 * Player:Enemies()) or MasterOfTheElements:Up() or Player:Enemies() > 3) then
+	if Earthquake:Usable() and (not MasterOfTheElements.known or (Stormkeeper.known and Stormkeeper:Up()) or MasterOfTheElements:Up() or Player:Enemies() > 3 or Player:MaelstromDeficit() < (4 * Player:Enemies())) then
 		return Earthquake
 	end
-	if Stormkeeper.known and ChainLightning:Usable() and Stormkeeper:Up() and Stormkeeper:Remains() < (3 * Player.gcd * Stormkeeper:Stack()) then
+	if Stormkeeper.known and ChainLightning:Usable() and Stormkeeper:Up() and ((Player:Maelstrom() < 60 and MasterOfTheElements:Up()) or Stormkeeper:Remains() < (3 * Player.gcd * Stormkeeper:Stack())) then
 		return ChainLightning
 	end
-	if LavaBurst:Usable() and LavaSurge:Up() and Player:Enemies() < 4 and (not StormElemental.known or StormElemental:Down()) and FlameShock:Ticking() > 0 then
-		return LavaBurst
+	if Player.use_cds and Stormkeeper:Usable() and Stormkeeper:Down() then
+		UseCooldown(Stormkeeper)
 	end
 	if ElementalBlast:Usable() and Player:Enemies() < 5 and (not StormElemental.known or StormElemental:Down()) then
 		return ElementalBlast
