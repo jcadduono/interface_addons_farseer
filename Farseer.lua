@@ -1904,6 +1904,7 @@ APL[SPEC.ELEMENTAL].single_target = function(self)
 --[[
 actions.single_target=flame_shock,target_if=(!ticking|dot.flame_shock.remains<=gcd|talent.ascendance.enabled&dot.flame_shock.remains<(cooldown.ascendance.remains+buff.ascendance.duration)&cooldown.ascendance.remains<4)&(buff.lava_surge.up|!buff.bloodlust.up)
 actions.single_target+=/ascendance,if=talent.ascendance.enabled&(time>=60|buff.bloodlust.up)&(cooldown.lava_burst.remains>0)&(!talent.icefury.enabled|!buff.icefury.up&!cooldown.icefury.up)
+actions.single_target+=/lightning_bolt,if=buff.stormkeeper.up&buff.stormkeeper.remains<1.1*gcd*buff.stormkeeper.stack
 actions.single_target+=/earthquake,if=buff.echoes_of_great_sundering.up&(buff.master_of_the_elements.up|maelstrom.max-maelstrom<9)
 actions.single_target+=/lava_burst,if=buff.echoes_of_great_sundering.up&talent.master_of_the_elements.enabled&buff.master_of_the_elements.down&maelstrom>=50
 actions.single_target+=/earth_shock,if=maelstrom.max-maelstrom<8
@@ -1912,11 +1913,10 @@ actions.single_target+=/stormkeeper,if=maelstrom<44&(raid_event.adds.count<3|rai
 actions.single_target+=/echoing_shock,if=talent.echoing_shock.enabled&!cooldown.lava_burst.remains
 actions.single_target+=/lava_burst,if=talent.echoing_shock.enabled&buff.echoing_shock.up
 actions.single_target+=/liquid_magma_totem,if=talent.liquid_magma_totem.enabled
-actions.single_target+=/lightning_bolt,if=buff.stormkeeper.up&spell_targets.chain_lightning<2&(buff.master_of_the_elements.up)
+actions.single_target+=/lightning_bolt,if=buff.stormkeeper.up&buff.master_of_the_elements.up
 actions.single_target+=/earthquake,if=buff.echoes_of_great_sundering.up&(!talent.master_of_the_elements.enabled|cooldown.elemental_blast.remains<=1.1*gcd*2|cooldown.lava_burst.remains>0&maelstrom>=92|spell_targets.chain_lightning<2&buff.stormkeeper.up&cooldown.lava_burst.remains<=gcd)
 actions.single_target+=/earthquake,if=spell_targets.chain_lightning>1&!dot.flame_shock.refreshable&!runeforge.echoes_of_great_sundering.equipped&(!talent.master_of_the_elements.enabled|buff.master_of_the_elements.up|cooldown.lava_burst.remains>0&maelstrom>=92)
 actions.single_target+=/earth_shock,if=!talent.master_of_the_elements.enabled|buff.master_of_the_elements.up|spell_targets.chain_lightning<2&buff.stormkeeper.up&cooldown.lava_burst.remains<=gcd
-actions.single_target+=/lightning_bolt,if=(buff.stormkeeper.remains<1.1*gcd*buff.stormkeeper.stack|buff.stormkeeper.up&buff.master_of_the_elements.up)
 actions.single_target+=/frost_shock,if=talent.icefury.enabled&talent.master_of_the_elements.enabled&buff.icefury.up&buff.master_of_the_elements.up
 actions.single_target+=/lava_burst,if=buff.ascendance.up
 actions.single_target+=/lava_burst,if=cooldown_react&!talent.master_of_the_elements.enabled
@@ -1942,6 +1942,9 @@ actions.single_target+=/frost_shock,moving=1
 	end
 	if Player.use_cds and AscendanceFlame:Usable() and not LavaBurst:Ready() and (Player:TimeInCombat() >= 60 or Player:BloodlustActive()) and (not Icefury.known or Icefury:Down() and not Icefury:Ready()) then
 		UseCooldown(AscendanceFlame)
+	end
+	if Stormkeeper.known and LightningBolt:Usable() and Stormkeeper:Up() and Stormkeeper:Remains() < (1.1 * Player.gcd * Stormkeeper:Stack()) then
+		return LightningBolt
 	end
 	if EchoesOfGreatSundering.known and MasterOfTheElements.known and EchoesOfGreatSundering:Up() then
 		if Earthquake:Usable() and (MasterOfTheElements:Up() or Player:MaelstromDeficit() < 8) then
@@ -1971,7 +1974,7 @@ actions.single_target+=/frost_shock,moving=1
 	if Player.use_cds and LiquidMagmaTotem:Usable() then
 		UseCooldown(LiquidMagmaTotem)
 	end
-	if Stormkeeper.known and MasterOfTheElements.known and LightningBolt:Usable() and Stormkeeper:Up() and MasterOfTheElements:Up() and Player:Enemies() < 2 then
+	if Stormkeeper.known and MasterOfTheElements.known and LightningBolt:Usable() and Stormkeeper:Up() and MasterOfTheElements:Up() then
 		return LightningBolt
 	end
 	if Earthquake:Usable() then
@@ -1985,9 +1988,6 @@ actions.single_target+=/frost_shock,moving=1
 	end
 	if EarthShock:Usable() and (not MasterOfTheElements.known or MasterOfTheElements:Up() or (not LavaBurst:Ready() and Player:Maelstrom() >= 92) or (Stormkeeper.known and Player:Enemies() < 2 and Stormkeeper:Up() and LavaBurst:Ready(Player.gcd))) then
 		return EarthShock
-	end
-	if Stormkeeper.known and LightningBolt:Usable() and Stormkeeper:Up() and ((MasterOfTheElements.known and MasterOfTheElements:Up()) or Stormkeeper:Remains() < (1.1 * Player.gcd * Stormkeeper:Stack())) then
-		return LightningBolt
 	end
 	if Icefury.known and MasterOfTheElements.known and FrostShock:Usable() and Icefury:Up() and MasterOfTheElements:Up() then
 		return FrostShock
