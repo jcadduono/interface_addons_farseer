@@ -125,6 +125,7 @@ local Player = {
 	time_diff = 0,
 	ctime = 0,
 	combat_start = 0,
+	level = 1,
 	spec = 0,
 	target_mode = 0,
 	execute_remains = 0,
@@ -1210,7 +1211,7 @@ function Player:InArenaOrBattleground()
 end
 
 function Player:UpdateAbilities()
-	self.mana_base = BaseMana[UnitLevel('player')]
+	self.mana_base = BaseMana[Player.level]
 	self.rescan_abilities = false
 
 	local _, ability, spellId, node
@@ -1397,7 +1398,7 @@ function Target:Update()
 		self.stunnable = true
 		self.classification = 'normal'
 		self.player = false
-		self.level = UnitLevel('player')
+		self.level = Player.level
 		self.hostile = true
 		local i
 		for i = 1, 25 do
@@ -1425,11 +1426,11 @@ function Target:Update()
 	self.stunnable = true
 	self.classification = UnitClassification('target')
 	self.player = UnitIsPlayer('target')
-	self.level = UnitLevel('target')
+	self.level = UnitEffectiveLevel('target')
 	self.hostile = UnitCanAttack('player', 'target') and not UnitIsDead('target')
 	self:UpdateHealth()
 	if not self.player and self.classification ~= 'minus' and self.classification ~= 'normal' then
-		if self.level == -1 or (Player.instance == 'party' and self.level >= UnitLevel('player') + 2) then
+		if self.level == -1 or (Player.instance == 'party' and self.level >= Player.level + 2) then
 			self.boss = true
 			self.stunnable = false
 		elseif Player.instance == 'raid' or (self.health_max > Player.health_max * 10) then
@@ -2787,12 +2788,14 @@ function events:PLAYER_SPECIALIZATION_CHANGED(unitName)
 	if unitName ~= 'player' then
 		return
 	end
+	Player.level = UnitEffectiveLevel('player')
 	Player.spec = GetSpecialization() or 0
 	farseerPreviousPanel.ability = nil
 	Player:SetTargetMode(1)
-	Target:Update()
 	events:PLAYER_EQUIPMENT_CHANGED()
 	events:PLAYER_REGEN_ENABLED()
+	Target:Update()
+	Player:Update()
 end
 
 function events:SPELL_UPDATE_COOLDOWN()
@@ -2867,7 +2870,6 @@ function events:PLAYER_ENTERING_WORLD()
 	_, Player.instance = IsInInstance()
 	Player.guid = UnitGUID('player')
 	events:PLAYER_SPECIALIZATION_CHANGED('player')
-	Player:Update()
 end
 
 farseerPanel.button:SetScript('OnClick', function(self, button, down)
