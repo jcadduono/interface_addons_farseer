@@ -1640,7 +1640,7 @@ actions.precombat+=/potion
 		if ElementalBlast:Usable() then
 			return ElementalBlast
 		end
-		if LavaBurst:Usable() and not ElementalBlast.known and LavaSurge:Down() then
+		if LavaBurst:Usable() and LavaSurge:Down() and (not MasterOfTheElements.known or MasterOfTheElements:Down()) then
 			return LavaBurst
 		end
 		if Opt.pot and Target.boss and not Player:InArenaOrBattleground() and PotionOfSpectralIntellect:Usable() then
@@ -1908,7 +1908,6 @@ actions.single_target+=/lightning_bolt,if=buff.stormkeeper.up&buff.stormkeeper.r
 actions.single_target+=/earthquake,if=buff.echoes_of_great_sundering.up&(buff.master_of_the_elements.up|maelstrom.max-maelstrom<9)
 actions.single_target+=/lava_burst,if=buff.echoes_of_great_sundering.up&talent.master_of_the_elements.enabled&buff.master_of_the_elements.down&maelstrom>=50
 actions.single_target+=/earth_shock,if=maelstrom.max-maelstrom<8
-actions.single_target+=/elemental_blast,if=!talent.master_of_the_elements.enabled|buff.master_of_the_elements.up&maelstrom<60|!buff.master_of_the_elements.up
 actions.single_target+=/stormkeeper,if=maelstrom<44&(raid_event.adds.count<3|raid_event.adds.in>50)
 actions.single_target+=/echoing_shock,if=talent.echoing_shock.enabled&!cooldown.lava_burst.remains
 actions.single_target+=/lava_burst,if=talent.echoing_shock.enabled&buff.echoing_shock.up
@@ -1918,6 +1917,7 @@ actions.single_target+=/earthquake,if=buff.echoes_of_great_sundering.up&(!talent
 actions.single_target+=/earthquake,if=spell_targets.chain_lightning>1&!dot.flame_shock.refreshable&!runeforge.echoes_of_great_sundering.equipped&(!talent.master_of_the_elements.enabled|buff.master_of_the_elements.up|cooldown.lava_burst.remains>0&maelstrom>=92)
 actions.single_target+=/earth_shock,if=!talent.master_of_the_elements.enabled|buff.master_of_the_elements.up|spell_targets.chain_lightning<2&buff.stormkeeper.up&cooldown.lava_burst.remains<=gcd
 actions.single_target+=/frost_shock,if=talent.icefury.enabled&talent.master_of_the_elements.enabled&buff.icefury.up&buff.master_of_the_elements.up
+actions.single_target+=/elemental_blast,if=maelstrom<60|!talent.master_of_the_elements.enabled|!buff.master_of_the_elements.up
 actions.single_target+=/lava_burst,if=buff.ascendance.up
 actions.single_target+=/lava_burst,if=cooldown_react&!talent.master_of_the_elements.enabled
 actions.single_target+=/icefury,if=maelstrom.max-maelstrom>25
@@ -1957,9 +1957,6 @@ actions.single_target+=/frost_shock,moving=1
 	if EarthShock:Usable() and Player:MaelstromDeficit() < 8 then
 		return EarthShock
 	end
-	if ElementalBlast:Usable() and (not MasterOfTheElements.known or (MasterOfTheElements:Up() and Player:Maelstrom() < 60) or MasterOfTheElements:Down()) then
-		return ElementalBlast
-	end
 	if Player.use_cds and Stormkeeper:Usable() and Player:Maelstrom() < 44 and Stormkeeper:Down() then
 		UseCooldown(Stormkeeper)
 	end
@@ -1991,6 +1988,9 @@ actions.single_target+=/frost_shock,moving=1
 	end
 	if Icefury.known and MasterOfTheElements.known and FrostShock:Usable() and Icefury:Up() and MasterOfTheElements:Up() then
 		return FrostShock
+	end
+	if ElementalBlast:Usable() and (Player:Maelstrom() < 60 or not MasterOfTheElements.known or MasterOfTheElements:Down()) then
+		return ElementalBlast
 	end
 	if LavaBurst:Usable() then
 		if AscendanceFlame.known and AscendanceFlame:Up() then
