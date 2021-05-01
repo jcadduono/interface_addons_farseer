@@ -996,6 +996,9 @@ PrimordialWave.mana_cost = 3
 PrimordialWave:SetVelocity(45)
 PrimordialWave.buff = Ability:Add(327164, true, true)
 PrimordialWave.buff.buff_duration = 15
+local Fleshcraft = Ability:Add(324631, true, true) -- Necrolord
+Fleshcraft.buff_duration = 120
+Fleshcraft.cooldown_duration = 120
 -- Soulbind conduits
 local CallOfFlame = Ability:Add(338303, true, true)
 CallOfFlame.conduit_id = 104
@@ -1632,6 +1635,9 @@ actions.precombat+=/potion
 		if Opt.shield and LightningShield:Usable() and LightningShield:Remains() < 300 then
 			UseCooldown(LightningShield)
 		end
+		if Opt.shield and Fleshcraft:Usable() and Fleshcraft:Remains() < 10 then
+			UseExtra(Fleshcraft)
+		end
 		if Opt.earth and Player.use_cds and EarthElemental:Usable() and not PrimalElementalist.known then
 			UseExtra(EarthElemental)
 		end
@@ -2086,6 +2092,9 @@ actions.precombat+=/snapshot_stats
 		end
 		if Opt.shield and LightningShield:Usable() and LightningShield:Remains() < 300 then
 			UseCooldown(LightningShield)
+		end
+		if Opt.shield and Fleshcraft:Usable() and Fleshcraft:Remains() < 10 then
+			UseExtra(Fleshcraft)
 		end
 		if Opt.earth and Player.use_cds and EarthElemental:Usable() and not PrimalElementalist.known then
 			UseExtra(EarthElemental)
