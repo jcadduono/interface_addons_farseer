@@ -285,7 +285,8 @@ Player.target_modes = {
 		{1, ''},
 		{2, '2'},
 		{3, '3'},
-		{4, '4+'},
+		{4, '4'},
+		{5, '5+'},
 	},
 	[SPEC.ENHANCEMENT] = {
 		{1, ''},
@@ -2014,7 +2015,7 @@ actions.single_target+=/frost_shock,moving=1
 	if LavaBurst:Usable() and (not MasterOfTheElements.known or MasterOfTheElements:Down()) then
 		return LavaBurst
 	end
-	if FlameShock:Usable() and FlameShock:Refreshable() then
+	if FlameShock:Usable() and FlameShock:Refreshable() and Target.timeToDie > (FlameShock:Remains() + 2) then
 		return FlameShock
 	end
 	if Earthquake:Usable() and Player:Enemies() > 1 and (not EchoesOfGreatSundering.known or EchoesOfGreatSundering:Up()) then
