@@ -1948,15 +1948,15 @@ actions.single_target+=/frost_shock,moving=1
 	if Stormkeeper.known and LightningBolt:Usable() and Stormkeeper:Up() and Stormkeeper:Remains() < (1.1 * Player.gcd * Stormkeeper:Stack()) then
 		return LightningBolt
 	end
-	if EchoesOfGreatSundering.known and MasterOfTheElements.known and EchoesOfGreatSundering:Up() then
-		if Earthquake:Usable() and (MasterOfTheElements:Up() or Player:MaelstromDeficit() < 8) then
+	if EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up() then
+		if Earthquake:Usable() and ((MasterOfTheElements.known and MasterOfTheElements:Up()) or Player:MaelstromDeficit() < 8) then
 			return Earthquake
 		end
-		if LavaBurst:Usable() and Player:Maelstrom() >= 50 and MasterOfTheElements:Down() then
+		if MasterOfTheElements.known and LavaBurst:Usable() and Player:Maelstrom() >= 50 and MasterOfTheElements:Down() then
 			return LavaBurst
 		end
 	end
-	if EarthShock:Usable() and Player:MaelstromDeficit() < 8 then
+	if EarthShock:Usable() and Player:MaelstromDeficit() < 8 and (not EchoesOfGreatSundering.known or EchoesOfGreatSundering:Down()) then
 		return EarthShock
 	end
 	if Player.use_cds and Stormkeeper:Usable() and Player:Maelstrom() < 44 and Stormkeeper:Down() then
@@ -1985,7 +1985,7 @@ actions.single_target+=/frost_shock,moving=1
 			return Earthquake
 		end
 	end
-	if EarthShock:Usable() and (not MasterOfTheElements.known or MasterOfTheElements:Up() or (not LavaBurst:Ready() and Player:Maelstrom() >= 92) or (Stormkeeper.known and Player:Enemies() < 2 and Stormkeeper:Up() and LavaBurst:Ready(Player.gcd))) then
+	if EarthShock:Usable() and (not EchoesOfGreatSundering.known or EchoesOfGreatSundering:Down()) and (not MasterOfTheElements.known or MasterOfTheElements:Up() or (not LavaBurst:Ready() and Player:Maelstrom() >= 92) or (Stormkeeper.known and Player:Enemies() < 2 and Stormkeeper:Up() and LavaBurst:Ready(Player.gcd))) then
 		return EarthShock
 	end
 	if Icefury.known and MasterOfTheElements.known and FrostShock:Usable() and Icefury:Up() and MasterOfTheElements:Up() then
