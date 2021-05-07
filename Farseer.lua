@@ -1690,6 +1690,13 @@ actions+=/run_action_list,name=se_single_target,if=talent.storm_elemental.enable
 		if StormElemental:Usable() then
 			UseCooldown(StormElemental)
 		end
+		if Opt.trinket and ((FireElemental.known and FireElemental:Up()) or (StormElemental.known and StormElemental:Up()) or (Stormkeeper.known and Stormkeeper:Up())) then
+			if Trinket1:Usable() then
+				UseCooldown(Trinket1)
+			elseif Trinket2:Usable() then
+				UseCooldown(Trinket2)
+			end
+		end
 	end
 	if PrimordialWave:Usable() and PrimordialWave.buff:Down() then
 		UseCooldown(PrimordialWave)
