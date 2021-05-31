@@ -551,16 +551,27 @@ function Ability:TravelTime()
 end
 
 function Ability:Ticking()
+	local count, ticking, _ = 0, {}
 	if self.aura_targets then
-		local count, guid, aura = 0
+		local guid, aura
 		for guid, aura in next, self.aura_targets do
 			if aura.expires - Player.time > Player.execute_remains then
-				count = count + 1
+				ticking[guid] = true
 			end
 		end
-		return count
 	end
-	return self:Up() and 1 or 0
+	if self.traveling then
+		local cast
+		for _, cast in next, self.traveling do
+			if Player.time - cast.start < self.max_range / self.velocity then
+				ticking[cast.dstGUID] = true
+			end
+		end
+	end
+	for _ in next, ticking do
+		count = count + 1
+	end
+	return count
 end
 
 function Ability:TickTime()
@@ -1530,6 +1541,30 @@ function FlameShock:Remains()
 		return self:Duration()
 	end
 	return Ability.Remains(self)
+end
+
+function FlameShock:Ticking()
+	local count, ticking, _ = 0, {}
+	if self.aura_targets then
+		local guid, aura
+		for guid, aura in next, self.aura_targets do
+			if aura.expires - Player.time > Player.execute_remains then
+				ticking[guid] = true
+			end
+		end
+	end
+	if PrimordialWave.known then
+		local cast
+		for _, cast in next, PrimordialWave.traveling do
+			if Player.time - cast.start < PrimordialWave.max_range / PrimordialWave.velocity then
+				ticking[cast.dstGUID] = true
+			end
+		end
+	end
+	for _ in next, ticking do
+		count = count + 1
+	end
+	return count
 end
 
 function MaelstromWeapon:Stack()
