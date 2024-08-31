@@ -301,22 +301,22 @@ local Player = {
 
 -- base mana pool max for each level
 Player.BaseMana = {
-	260,	270,	285,	300,	310,	--  5
-	330,	345,	360,	380,	400,	-- 10
-	430,	465,	505,	550,	595,	-- 15
-	645,	700,	760,	825,	890,	-- 20
-	965,	1050,	1135,	1230,	1335,	-- 25
-	1445,	1570,	1700,	1845,	2000,	-- 30
-	2165,	2345,	2545,	2755,	2990,	-- 35
-	3240,	3510,	3805,	4125,	4470,	-- 40
-	4845,	5250,	5690,	6170,	6685,	-- 45
-	7245,	7855,	8510,	9225,	10000,	-- 50
-	11745,	13795,	16205,	19035,	22360,	-- 55
-	26265,	30850,	36235,	42565,	50000,	-- 60
-	58730,	68985,	81030,	95180,	111800,	-- 65
-	131325,	154255,	181190,	212830,	250000,	-- 70
-	293650, 344930, 405160, 475910, 559015, -- 75
-	656630, 771290, -- 80
+	260,     270,     285,     300,     310,     -- 5
+	330,     345,     360,     380,     400,     -- 10
+	430,     465,     505,     550,     595,     -- 15
+	645,     700,     760,     825,     890,     -- 20
+	965,     1050,    1135,    1230,    1335,    -- 25
+	1445,    1570,    1700,    1845,    2000,    -- 30
+	2165,    2345,    2545,    2755,    2990,    -- 35
+	3240,    3510,    3805,    4125,    4470,    -- 40
+	4845,    5250,    5690,    6170,    6685,    -- 45
+	7245,    7855,    8510,    9225,    10000,   -- 50
+	11745,   13795,   16205,   19035,   22360,   -- 55
+	26265,   30850,   36235,   42565,   50000,   -- 60
+	58730,   68985,   81030,   95180,   111800,  -- 65
+	131325,  154255,  181190,  212830,  250000,  -- 70
+	293650,  344930,  405160,  475910,  559015,  -- 75
+	656630,  771290,  905970,  1064170, 2500000, -- 80
 }
 
 -- current pet information (used only to store summoned pets for priests)
@@ -1160,6 +1160,8 @@ local Earthsurge = Ability:Add(455590, false, true)
 local LivelyTotems = Ability:Add(445034, true, true, 458101)
 LivelyTotems.buff_duration = 8
 local Supercharge = Ability:Add(455110, false, true)
+local SurgingCurrents = Ability:Add(454372, true, true, 454376)
+SurgingCurrents.buff_duration = 15
 local SurgingTotem = Ability:Add(444995, false, true)
 SurgingTotem.buff_duration = 24
 SurgingTotem.cooldown_duration = 30
@@ -2189,7 +2191,7 @@ function LightningBolt:MaelstromGain()
 	if FlowOfPower.known then
 		gain = gain + FlowOfPower.gain_increase[self]
 	end
-	return gain
+	return gain * self:Targets()
 end
 LavaBurst.MaelstromGain = LightningBolt.MaelstromGain
 
@@ -2210,7 +2212,14 @@ function LightningBolt:Damage()
 end
 
 function LightningBolt:Targets()
-	if PrimordialWave.known and PrimordialWave.buff:Up() then
+	if Player.spec == SPEC.ENHANCEMENT and PrimordialWave.known and PrimordialWave.buff:Up() then
+		return FlameShock:Ticking()
+	end
+	return 1
+end
+
+function LavaBurst:Targets()
+	if Player.spec == SPEC.ELEMENTAL and PrimordialWave.known and PrimordialWave.buff:Up() then
 		return FlameShock:Ticking()
 	end
 	return 1
@@ -2316,6 +2325,13 @@ function ThorimsInvocation:ChainLightning()
 	return ChainLightning.last_used > LightningBolt.last_used
 end
 
+function Tempest.buff:Remains()
+	if Tempest:Casting() then
+		return 0
+	end
+	return Ability.Remains(self)
+end
+
 function Tempest:React()
 	return self.buff:Remains()
 end
@@ -2335,6 +2351,23 @@ function ClCrashLightning:MaxStack()
 		stack = stack + 2
 	end
 	return stack
+end
+
+function HealingSurge:Free()
+	if SurgingCurrents.known and SurgingCurrents:Up() then
+		return true
+	end
+	return false
+end
+
+function PrimordialWave.buff:Remains()
+	if (
+		(Player.spec == SPEC.ENHANCEMENT and LightningBolt:Casting()) or
+		(Player.spec == SPEC.ELEMENTAL and LavaBurst:Casting())
+	) then
+		return 0
+	end
+	return Ability.Remains(self)
 end
 
 -- End Ability Modifications
@@ -2374,6 +2407,9 @@ end
 APL[SPEC.ELEMENTAL].Main = function(self)
 	self.cds_active = (AscendanceFlame.known and AscendanceFlame:Up()) or (FireElemental.known and FireElemental:Up()) or (StormElemental.known and StormElemental:Up())
 	self.use_cds = Opt.cooldown and (self.cds_active or Target.boss or Target.player or (not Opt.boss_only and Target.timeToDie > Opt.cd_ttd))
+	if Player.health.pct < Opt.heal and HealingSurge:Usable() and (MaelstromWeapon.current >= 5 or HealingSurge:Free()) then
+		UseExtra(HealingSurge)
+	end
 	if Player:TimeInCombat() == 0 then
 --[[
 actions.precombat=flask
@@ -2808,7 +2844,7 @@ end
 APL[SPEC.ENHANCEMENT].Main = function(self)
 	self.cds_active = (AscendanceAir.known and AscendanceAir:Up()) or (FeralSpirit.known and FeralSpirit:Up()) or (DoomWinds.known and DoomWinds:Up())
 	self.use_cds = Opt.cooldown and (self.cds_active or Target.boss or Target.player or (not Opt.boss_only and Target.timeToDie > Opt.cd_ttd))
-	if Player.health.pct < Opt.heal and MaelstromWeapon.current >= 5 and HealingSurge:Usable() then
+	if Player.health.pct < Opt.heal and HealingSurge:Usable() and (MaelstromWeapon.current >= 5 or HealingSurge:Free()) then
 		UseExtra(HealingSurge)
 	end
 	if Player:TimeInCombat() == 0 then
@@ -3860,6 +3896,10 @@ function UI:UpdateDisplay()
 	end
 	if Player.major_cd_remains > 0 then
 		text_center = format('%.1fs', Player.major_cd_remains)
+	end
+	if border ~= farseerPanel.border.overlay then
+		farseerPanel.border.overlay = border
+		farseerPanel.border:SetTexture(ADDON_PATH .. (border or 'border') .. '.blp')
 	end
 	farseerPanel.dimmer:SetShown(dim)
 	farseerPanel.text.center:SetText(text_center)
