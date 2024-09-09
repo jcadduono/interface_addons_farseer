@@ -1857,6 +1857,9 @@ function Player:UpdateKnown()
 		ElementalBlast.mastery.known = true
 	end
 	MaelstromWeapon.max = MaelstromWeapon.max_stack + (RagingMaelstrom.known and 5 or 0)
+	if AncestralSwiftness.known then
+		NaturesSwiftness.known = false
+	end
 
 	Abilities:Update()
 	SummonedPets:Update()
@@ -2192,12 +2195,16 @@ function LightningBolt:Usable()
 end
 
 function LightningBolt:Free()
-	return Stormkeeper:Up() or (NaturesSwiftness.known and NaturesSwiftness:Up())
+	return (
+		Stormkeeper:Up() or
+		(NaturesSwiftness.known and NaturesSwiftness:Up()) or
+		(AncestralSwiftness.known and AncestralSwiftness:Up())
+	)
 end
 
 function LightningBolt:Targets()
 	if Player.spec == SPEC.ENHANCEMENT and PrimordialWave.known and PrimordialWave.buff:Up() then
-		return FlameShock:Ticking()
+		return 1 + FlameShock:Ticking()
 	end
 	return 1
 end
@@ -2219,7 +2226,12 @@ function ChainLightning:Usable()
 end
 
 function ChainLightning:Free()
-	return Stormkeeper:Up() or (NaturesSwiftness.known and NaturesSwiftness:Up()) or (ArcDischarge.known and ArcDischarge:Up())
+	return (
+		Stormkeeper:Up() or
+		(NaturesSwiftness.known and NaturesSwiftness:Up()) or
+		(AncestralSwiftness.known and AncestralSwiftness:Up()) or
+		(ArcDischarge.known and ArcDischarge:Up())
+	)
 end
 
 function ChainLightning:Targets()
@@ -2232,6 +2244,13 @@ end
 
 function ChainLightning:Damage()
 	return 613 -- TODO: Calculate actual damage
+end
+
+function ElementalBlast:Free()
+	return (
+		(NaturesSwiftness.known and NaturesSwiftness:Up()) or
+		(AncestralSwiftness.known and AncestralSwiftness:Up())
+	)
 end
 
 function LavaBeam:Usable()
@@ -2249,12 +2268,15 @@ end
 LavaBeam.MaelstromGain = ChainLightning.MaelstromGain
 
 function LavaBurst:Free()
-	return LavaSurge:Up()
+	return (
+		LavaSurge:Up() or
+		(AncestralSwiftness.known and AncestralSwiftness:Up())
+	)
 end
 
 function LavaBurst:Targets()
 	if Player.spec == SPEC.ELEMENTAL and PrimordialWave.known and PrimordialWave.buff:Up() then
-		return FlameShock:Ticking()
+		return 1 + FlameShock:Ticking()
 	end
 	return 1
 end
@@ -2368,7 +2390,10 @@ function Tempest:Maelstrom()
 end
 
 function Tempest:Free()
-	return (NaturesSwiftness.known and NaturesSwiftness:Up())
+	return (
+		(NaturesSwiftness.known and NaturesSwiftness:Up()) or
+		(AncestralSwiftness.known and AncestralSwiftness:Up())
+	)
 end
 
 function Tempest.buff:Remains()
@@ -2399,8 +2424,13 @@ function ClCrashLightning:MaxStack()
 end
 
 function HealingSurge:Free()
-	return (SurgingCurrents.known and SurgingCurrents:Up())
+	return (
+		(SurgingCurrents.known and SurgingCurrents:Up()) or
+		(NaturesSwiftness.known and NaturesSwiftness:Up()) or
+		(AncestralSwiftness.known and AncestralSwiftness:Up())
+	)
 end
+ChainHeal.Free = HealingSurge.Free
 
 function PrimordialWave.buff:Remains()
 	if (
@@ -2449,7 +2479,7 @@ end
 APL[SPEC.ELEMENTAL].Main = function(self)
 	self.cds_active = (AscendanceFlame.known and AscendanceFlame:Up()) or (FireElemental.known and FireElemental:Up()) or (StormElemental.known and StormElemental:Up())
 	self.use_cds = Opt.cooldown and (self.cds_active or Target.boss or Target.player or (not Opt.boss_only and Target.timeToDie > Opt.cd_ttd))
-	if Player.health.pct < Opt.heal and HealingSurge:Usable() and (MaelstromWeapon.current >= 5 or HealingSurge:Free()) then
+	if Player.health.pct < Opt.heal and HealingSurge:Usable() and HealingSurge:Free() then
 		UseExtra(HealingSurge)
 	end
 	if Player:TimeInCombat() == 0 then
@@ -2565,7 +2595,7 @@ actions.aoe+=/ancestral_swiftness
 	if PrimordialWave:Usable() and (not SurgeOfPower.known or SurgeOfPower:Up() or Player.maelstrom.current < (60 - (EyeOfTheStorm.known and 5 or 0))) then
 		UseCooldown(PrimordialWave)
 	end
-	if AncestralSwiftness:Usable() then
+	if AncestralSwiftness:Usable() and AncestralSwiftness:Down() then
 		UseCooldown(AncestralSwiftness)
 	end
 end
@@ -2719,7 +2749,7 @@ actions.single_target+=/ancestral_swiftness
 	if PrimordialWave:Usable() then
 		return UseCooldown(PrimordialWave)
 	end
-	if AncestralSwiftness:Usable() then
+	if AncestralSwiftness:Usable() and AncestralSwiftness:Down() then
 		return UseCooldown(AncestralSwiftness)
 	end
 end
