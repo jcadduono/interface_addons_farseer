@@ -1156,9 +1156,14 @@ local AwakeningStorms = Ability:Add(455129, false, true, 455130)
 AwakeningStorms.buff = Ability:Add(462131, true, true)
 AwakeningStorms.buff.buff_duration = 3600
 AwakeningStorms.buff.max_stack = 3
+local CallOfTheAncestors = Ability:Add(443450, true, true)
+CallOfTheAncestors.active = 0
 local Earthsurge = Ability:Add(455590, false, true)
+local ElementalReverb = Ability:Add(443418, false, true)
+local HeedMyCall = Ability:Add(443444, false, true)
 local LivelyTotems = Ability:Add(445034, true, true, 458101)
 LivelyTotems.buff_duration = 8
+local RollingThunder = Ability:Add(454026, true, true)
 local Supercharge = Ability:Add(455110, false, true)
 local SurgingCurrents = Ability:Add(454372, true, true, 454376)
 SurgingCurrents.buff_duration = 15
@@ -1233,6 +1238,7 @@ LavaBeam:AutoAoe(false)
 local LightningRod = Ability:Add(210689, true, true, 197209)
 LightningRod.buff_duration = 8
 LightningRod.value = 0.20
+LightningRod:Track()
 local LiquidMagmaTotem = Ability:Add(192222, false, true)
 LiquidMagmaTotem.buff_duration = 6
 LiquidMagmaTotem.cooldown_duration = 30
@@ -1455,7 +1461,7 @@ end
 
 function SummonedPet:Remains(initial)
 	if self.summon_spell and self.summon_spell.summon_count > 0 and self.summon_spell:Casting() then
-		return self.duration
+		return self:Duration()
 	end
 	local expires_max = 0
 	for guid, unit in next, self.active_units do
@@ -1487,6 +1493,10 @@ function SummonedPet:Count()
 	return count
 end
 
+function SummonedPet:Duration()
+	return self.duration
+end
+
 function SummonedPet:Expiring(seconds)
 	local count = 0
 	for guid, unit in next, self.active_units do
@@ -1501,7 +1511,7 @@ function SummonedPet:AddUnit(guid)
 	local unit = {
 		guid = guid,
 		spawn = Player.time,
-		expires = Player.time + self.duration,
+		expires = Player.time + self:Duration(),
 	}
 	self.active_units[guid] = unit
 	return unit
@@ -1528,6 +1538,7 @@ function SummonedPet:Clear()
 end
 
 -- Summoned Pets
+Pet.Ancestor = SummonedPet:Add(221177, 6, CallOfTheAncestors)
 Pet.GreaterEarthElemental = SummonedPet:Add(95072, 60, EarthElemental)
 Pet.GreaterFireElemental = SummonedPet:Add(95061, 30, FireElemental)
 Pet.GreaterStormElemental = SummonedPet:Add(77936, 30, StormElemental)
@@ -1967,14 +1978,20 @@ function Player:Update()
 		end
 		self.maelstrom.current = clamp(self.maelstrom.current, 0, self.maelstrom.max)
 		self.maelstrom.deficit = self.maelstrom.max - self.maelstrom.current
-	elseif self.spec == SPEC.ENHANCEMENT then
+	end
+	if MaelstromWeapon.known then
 		if self.cast.ability and self.cast.ability.consume_mw then
 			MaelstromWeapon.current = 0
 		else
 			MaelstromWeapon.current = MaelstromWeapon:Stack()
 		end
 		MaelstromWeapon.deficit = MaelstromWeapon.max - MaelstromWeapon.current
+	end
+	if FeralSpirit.known then
 		FeralSpirit.active = Pet.SpiritWolf:Count() + (ElementalSpirits.known and Pet.ElementalSpiritWolf:Count())
+	end
+	if CallOfTheAncestors.known then
+		CallOfTheAncestors.active = Pet.Ancestor:Count()
 	end
 	speed_mh, speed_oh = UnitAttackSpeed('player')
 	self.swing.mh.speed = speed_mh or 0
@@ -2350,14 +2367,33 @@ function Windstrike:Usable()
 end
 
 function MasterOfTheElements:Remains()
-	if LavaBurst:Casting() then
+	if self.known and LavaBurst:Casting() then
 		return self:Duration()
 	end
-	local remains = Ability.Remains(self)
-	if remains > 0 and (LightningBolt:Casting() or ChainLightning:Casting() or (ElementalBlast.known and ElementalBlast:Casting())) then
+	if (
+		LightningBolt:Casting() or
+		ChainLightning:Casting() or
+		(Tempest.known and Tempest:Casting()) or
+		(ElementalBlast.known and ElementalBlast:Casting())
+	) then
 		return 0
 	end
-	return remains
+	return Ability.Remains(self)
+end
+
+function SurgeOfPower:Remains()
+	if self.known and ElementalBlast:Casting() then
+		return self:Duration()
+	end
+	if (
+		LightningBolt:Casting() or
+		ChainLightning:Casting() or
+		(Tempest.known and Tempest:Casting()) or
+		(LavaBurst.known and LavaBurst:Casting())
+	) then
+		return 0
+	end
+	return Ability.Remains(self)
 end
 
 function AlphaWolf:MinRemains()
@@ -2436,6 +2472,10 @@ end
 -- End Ability Modifications
 
 -- Start Summoned Pet Modifications
+
+function Pet.Ancestor:Duration()
+	return self.duration + (HeedMyCall.known and 4 or 0)
+end
 
 function Pet.LiquidMagmaTotem:CastLanded(unit, spellId, dstGUID, event, missType)
 	if Opt.auto_aoe and event == 'SPELL_DAMAGE' then
@@ -2563,7 +2603,7 @@ APL[SPEC.ELEMENTAL].aoe_cds = function(self)
 actions.aoe=fire_elemental,if=!buff.fire_elemental.up
 actions.aoe+=/storm_elemental,if=!buff.storm_elemental.up
 actions.aoe+=/stormkeeper,if=!buff.stormkeeper.up
-actions.aoe+=/totemic_recall,if=cooldown.liquid_magma_totem.remains>15&talent.fire_elemental.enabled
+actions.aoe+=/totemic_recall,if=cooldown.liquid_magma_totem.remains>15&(active_dot.flame_shock<(spell_targets.chain_lightning>?6)-2|talent.fire_elemental.enabled)
 actions.aoe+=/liquid_magma_totem
 actions.aoe+=/primordial_wave,target_if=min:dot.flame_shock.remains,if=buff.surge_of_power.up|!talent.surge_of_power.enabled|maelstrom<60-5*talent.eye_of_the_storm.enabled
 actions.aoe+=/ancestral_swiftness
@@ -2577,7 +2617,7 @@ actions.aoe+=/ancestral_swiftness
 	if Stormkeeper:Usable() and Stormkeeper:Down() then
 		UseCooldown(Stormkeeper)
 	end
-	if FireElemental.known and TotemicRecall:Usable() and not LiquidMagmaTotem:Ready(15) then
+	if TotemicRecall:Usable() and not LiquidMagmaTotem:Ready(15) and (FireElemental.known or FlameShock:Ticking() < (min(6, Player.enemies) - 2)) then
 		UseCooldown(TotemicRecall)
 	end
 	if LiquidMagmaTotem:Usable() then
@@ -2604,11 +2644,11 @@ actions.aoe+=/lava_burst,target_if=dot.flame_shock.remains>2,if=buff.primordial_
 actions.aoe+=/lava_burst,target_if=dot.flame_shock.remains>2,if=buff.primordial_wave.up&(buff.primordial_wave.remains<4|buff.lava_surge.up)
 actions.aoe+=/lava_burst,target_if=dot.flame_shock.remains,if=cooldown_react&buff.lava_surge.up&!buff.master_of_the_elements.up&talent.master_of_the_elements.enabled&talent.fire_elemental.enabled
 actions.aoe+=/earthquake,if=cooldown.primordial_wave.remains<gcd&talent.surge_of_power.enabled&(buff.echoes_of_great_sundering_es.up|buff.echoes_of_great_sundering_eb.up|!talent.echoes_of_great_sundering.enabled)
-actions.aoe+=/earthquake,target_if=max:debuff.lightning_rod.remains,if=(debuff.lightning_rod.remains=0&talent.lightning_rod.enabled|maelstrom>variable.mael_cap-30)&(buff.echoes_of_great_sundering_es.up|buff.echoes_of_great_sundering_eb.up|!talent.echoes_of_great_sundering.enabled)
+actions.aoe+=/earthquake,if=(lightning_rod=0&talent.lightning_rod.enabled|maelstrom>variable.mael_cap-30)&(buff.echoes_of_great_sundering_es.up|buff.echoes_of_great_sundering_eb.up|!talent.echoes_of_great_sundering.enabled)
 actions.aoe+=/earthquake,if=buff.stormkeeper.up&spell_targets.chain_lightning>=6&talent.surge_of_power.enabled&(buff.echoes_of_great_sundering_es.up|buff.echoes_of_great_sundering_eb.up|!talent.echoes_of_great_sundering.enabled)
 actions.aoe+=/earthquake,if=(buff.master_of_the_elements.up|spell_targets.chain_lightning>=5)&(buff.fusion_of_elements_nature.up|buff.ascendance.remains>9|!buff.ascendance.up)&(buff.echoes_of_great_sundering_es.up|buff.echoes_of_great_sundering_eb.up|!talent.echoes_of_great_sundering.enabled)&talent.fire_elemental.enabled
-actions.aoe+=/elemental_blast,target_if=min:debuff.lightning_rod.remains,if=talent.echoes_of_great_sundering.enabled&!buff.echoes_of_great_sundering_eb.up&(!buff.maelstrom_surge.up&set_bonus.tww1_4pc|maelstrom>variable.mael_cap-30)
-actions.aoe+=/earth_shock,target_if=min:debuff.lightning_rod.remains,if=talent.echoes_of_great_sundering.enabled&!buff.echoes_of_great_sundering_es.up&(!buff.maelstrom_surge.up&set_bonus.tww1_4pc|maelstrom>variable.mael_cap-30)
+actions.aoe+=/elemental_blast,target_if=min:debuff.lightning_rod.remains,if=talent.echoes_of_great_sundering.enabled&!buff.echoes_of_great_sundering_eb.up&(lightning_rod=0|maelstrom>variable.mael_cap-30)
+actions.aoe+=/earth_shock,target_if=min:debuff.lightning_rod.remains,if=talent.echoes_of_great_sundering.enabled&!buff.echoes_of_great_sundering_es.up&(lightning_rod=0|maelstrom>variable.mael_cap-30)
 actions.aoe+=/icefury,if=talent.fusion_of_elements.enabled&!(buff.fusion_of_elements_nature.up|buff.fusion_of_elements_fire.up)
 actions.aoe+=/lava_burst,target_if=dot.flame_shock.remains>2,if=talent.master_of_the_elements.enabled&!buff.master_of_the_elements.up&!buff.ascendance.up&talent.fire_elemental.enabled
 actions.aoe+=/lava_beam,if=buff.stormkeeper.up&(buff.surge_of_power.up|spell_targets.lava_beam<6)
@@ -2659,16 +2699,16 @@ actions.aoe+=/frost_shock,moving=1
 	if Earthquake:Usable() and (not EchoesOfGreatSundering.known or EchoesOfGreatSundering:Up()) and (
 		Player.maelstrom.deficit < 30 or
 		(SurgeOfPower.known and (PrimordialWave:Ready(Player.gcd) or (Player.enemies >= 6 and Stormkeeper:Up()))) or
-		(LightningRod.known and LightningRod:Down()) or
+		(LightningRod.known and LightningRod:Ticking() == 0) or
 		(FireElemental.known and (Player.enemies >= 5 or MasterOfTheElements:Up() and (FusionOfElements.nature:Up() or AscendanceFlame:Remains() > 9 or AscendanceFlame:Down())))
 	) then
 		return Earthquake
 	end
 	if EchoesOfGreatSundering.known then
-		if ElementalBlast:Usable() and EchoesOfGreatSundering:Down() and (Player.maelstrom.deficit < 30 or (MaelstromSurge.known and MaelstromSurge:Down())) then
+		if ElementalBlast:Usable() and EchoesOfGreatSundering:Down() and (Player.maelstrom.deficit < 30 or (LightningRod.known and LightningRod:Ticking() == 0)) then
 			return ElementalBlast
 		end
-		if EarthShock:Usable() and EchoesOfGreatSundering:Down() and (Player.maelstrom.deficit < 30 or (MaelstromSurge.known and MaelstromSurge:Down())) then
+		if EarthShock:Usable() and EchoesOfGreatSundering:Down() and (Player.maelstrom.deficit < 30 or (LightningRod.known and LightningRod:Ticking() == 0)) then
 			return EarthShock
 		end
 	end
@@ -2719,8 +2759,8 @@ actions.single_target+=/storm_elemental,if=!buff.storm_elemental.up
 actions.single_target+=/stormkeeper,if=!buff.ascendance.up&!buff.stormkeeper.up
 actions.single_target+=/totemic_recall,if=cooldown.liquid_magma_totem.remains>15&spell_targets.chain_lightning>1&talent.fire_elemental.enabled
 actions.single_target+=/liquid_magma_totem,if=!buff.ascendance.up&(talent.fire_elemental.enabled|spell_targets.chain_lightning>1)
-actions.single_target+=/primordial_wave,target_if=min:dot.flame_shock.remains
-actions.single_target+=/ancestral_swiftness
+actions.single_target+=/primordial_wave,target_if=min:dot.flame_shock.remains,if=spell_targets.chain_lightning=1|buff.surge_of_power.up|!talent.surge_of_power.enabled|maelstrom<60-5*talent.eye_of_the_storm.enabled|talent.liquid_magma_totem.enabled
+actions.single_target+=/ancestral_swiftness,if=!buff.primordial_wave.up|!buff.stormkeeper.up|!talent.elemental_blast.enabled
 ]]
 	if FireElemental:Usable() and FireElemental:Down() then
 		return UseCooldown(FireElemental)
@@ -2737,10 +2777,10 @@ actions.single_target+=/ancestral_swiftness
 	if LiquidMagmaTotem:Usable() and AscendanceFlame:Down() and (FireElemental.known or Player.enemies > 1) then
 		return UseCooldown(LiquidMagmaTotem)
 	end
-	if PrimordialWave:Usable() then
+	if PrimordialWave:Usable() and (Player.enemies == 1 or LiquidMagmaTotem.known or not SurgeOfPower.known or SurgeOfPower:Up() or Player.maelstrom.current < (60 - (EyeOfTheStorm.known and 5 or 0))) then
 		return UseCooldown(PrimordialWave)
 	end
-	if AncestralSwiftness:Usable() and AncestralSwiftness:Down() then
+	if AncestralSwiftness:Usable() and AncestralSwiftness:Down() and (not ElementalBlast.known or PrimordialWave.buff:Down() or Stormkeeper:Down()) then
 		return UseCooldown(AncestralSwiftness)
 	end
 end
@@ -2748,36 +2788,37 @@ end
 APL[SPEC.ELEMENTAL].single_target = function(self)
 --[[
 actions.single_target+=/flame_shock,target_if=min:dot.flame_shock.remains,if=active_enemies=1&(dot.flame_shock.remains<2|active_dot.flame_shock=0)&(dot.flame_shock.remains<cooldown.primordial_wave.remains|!talent.primordial_wave.enabled)&(dot.flame_shock.remains<cooldown.liquid_magma_totem.remains|!talent.liquid_magma_totem.enabled)&!buff.surge_of_power.up&talent.fire_elemental.enabled
-actions.single_target+=/flame_shock,target_if=min:dot.flame_shock.remains,if=active_dot.flame_shock<active_enemies&spell_targets.chain_lightning>1&(talent.deeply_rooted_elements.enabled|talent.ascendance.enabled|talent.primordial_wave.enabled|talent.searing_flames.enabled|talent.magma_chamber.enabled)&(!buff.surge_of_power.up&buff.stormkeeper.up|!talent.surge_of_power.enabled|cooldown.ascendance.remains=0)
-actions.single_target+=/flame_shock,target_if=min:dot.flame_shock.remains,if=spell_targets.chain_lightning>1&(talent.deeply_rooted_elements.enabled|talent.ascendance.enabled|talent.primordial_wave.enabled|talent.searing_flames.enabled|talent.magma_chamber.enabled)&(buff.surge_of_power.up&!buff.stormkeeper.up|!talent.surge_of_power.enabled)&dot.flame_shock.remains<6,cycle_targets=1
-actions.single_target+=/tempest
+actions.single_target+=/flame_shock,target_if=min:dot.flame_shock.remains,if=active_dot.flame_shock<active_enemies&spell_targets.chain_lightning>1&(talent.deeply_rooted_elements.enabled|talent.ascendance.enabled|talent.primordial_wave.enabled|talent.searing_flames.enabled|talent.magma_chamber.enabled)&(!buff.surge_of_power.up&buff.stormkeeper.up|!talent.surge_of_power.enabled|cooldown.ascendance.remains=0&talent.ascendance.enabled)&!talent.liquid_magma_totem.enabled
+actions.single_target+=/flame_shock,target_if=min:dot.flame_shock.remains,if=spell_targets.chain_lightning>1&(talent.deeply_rooted_elements.enabled|talent.ascendance.enabled|talent.primordial_wave.enabled|talent.searing_flames.enabled|talent.magma_chamber.enabled)&(buff.surge_of_power.up&!buff.stormkeeper.up|!talent.surge_of_power.enabled)&dot.flame_shock.remains<6&talent.fire_elemental.enabled,cycle_targets=1
+actions.single_target+=/tempest,target_if=min:debuff.lightning_rod.remains,if=!buff.arc_discharge.up
 actions.single_target+=/lightning_bolt,if=buff.stormkeeper.up&buff.surge_of_power.up
 actions.single_target+=/lava_burst,target_if=dot.flame_shock.remains>2,if=buff.stormkeeper.up&!buff.master_of_the_elements.up&!talent.surge_of_power.enabled&talent.master_of_the_elements.enabled
 actions.single_target+=/lightning_bolt,if=buff.stormkeeper.up&!talent.surge_of_power.enabled&(buff.master_of_the_elements.up|!talent.master_of_the_elements.enabled)
 actions.single_target+=/lightning_bolt,if=buff.surge_of_power.up&!buff.ascendance.up&talent.echo_chamber.enabled
 actions.single_target+=/ascendance,if=cooldown.lava_burst.charges_fractional<1.0
-actions.single_target+=/lava_burst,if=cooldown_react&buff.lava_surge.up&talent.fire_elemental.enabled
+actions.single_target+=/lava_burst,target_if=dot.flame_shock.remains,if=cooldown_react&buff.lava_surge.up&talent.fire_elemental.enabled
 actions.single_target+=/lava_burst,target_if=dot.flame_shock.remains>2,if=buff.primordial_wave.up
 actions.single_target+=/earthquake,if=buff.master_of_the_elements.up&(buff.echoes_of_great_sundering_es.up|buff.echoes_of_great_sundering_eb.up|spell_targets.chain_lightning>1&!talent.echoes_of_great_sundering.enabled&!talent.elemental_blast.enabled)&(buff.fusion_of_elements_nature.up|maelstrom>variable.mael_cap-15|buff.ascendance.remains>9|!buff.ascendance.up)&talent.fire_elemental.enabled
 actions.single_target+=/elemental_blast,if=buff.master_of_the_elements.up&(buff.fusion_of_elements_nature.up|buff.fusion_of_elements_fire.up|maelstrom>variable.mael_cap-15|buff.ascendance.remains>6|!buff.ascendance.up)&talent.fire_elemental.enabled
 actions.single_target+=/earth_shock,if=buff.master_of_the_elements.up&(buff.fusion_of_elements_nature.up|maelstrom>variable.mael_cap-15|buff.ascendance.remains>9|!buff.ascendance.up)&talent.fire_elemental.enabled
-actions.single_target+=/earthquake,if=(buff.echoes_of_great_sundering_es.up|buff.echoes_of_great_sundering_eb.up|spell_targets.chain_lightning>1&!talent.echoes_of_great_sundering.enabled&!talent.elemental_blast.enabled)&(buff.master_of_the_elements.up&cooldown.stormkeeper.remains>10|maelstrom>variable.mael_cap-15|buff.stormkeeper.up)&talent.storm_elemental.enabled
-actions.single_target+=/elemental_blast,target_if=min:debuff.lightning_rod.remains,if=(buff.master_of_the_elements.up&cooldown.stormkeeper.remains>10|maelstrom>variable.mael_cap-15|buff.stormkeeper.up)&talent.storm_elemental.enabled
-actions.single_target+=/earth_shock,target_if=min:debuff.lightning_rod.remains,if=(buff.master_of_the_elements.up&cooldown.stormkeeper.remains>10|maelstrom>variable.mael_cap-15|buff.stormkeeper.up)&talent.storm_elemental.enabled
+actions.single_target+=/earthquake,if=(buff.echoes_of_great_sundering_es.up|buff.echoes_of_great_sundering_eb.up|spell_targets.chain_lightning>1&!talent.echoes_of_great_sundering.enabled&!talent.elemental_blast.enabled)&(buff.stormkeeper.up|cooldown.primordial_wave.remains<gcd&talent.surge_of_power.enabled&!talent.liquid_magma_totem.enabled)&talent.storm_elemental.enabled
+actions.single_target+=/elemental_blast,target_if=min:debuff.lightning_rod.remains,if=buff.stormkeeper.up&talent.storm_elemental.enabled
+actions.single_target+=/earth_shock,if=((buff.master_of_the_elements.up|lightning_rod=0)&cooldown.stormkeeper.remains>10&(rolling_thunder.next_tick>5|!talent.rolling_thunder.enabled)|buff.stormkeeper.up)&talent.storm_elemental.enabled&spell_targets.chain_lightning=1
+actions.single_target+=/earth_shock,target_if=min:debuff.lightning_rod.remains,if=(cooldown.primordial_wave.remains<gcd&talent.surge_of_power.enabled&!talent.liquid_magma_totem.enabled|buff.stormkeeper.up)&talent.storm_elemental.enabled&spell_targets.chain_lightning>1&talent.echoes_of_great_sundering.enabled&!buff.echoes_of_great_sundering_es.up
 actions.single_target+=/icefury,if=!(buff.fusion_of_elements_nature.up|buff.fusion_of_elements_fire.up)&buff.icefury.stack=2&(talent.fusion_of_elements.enabled|!buff.ascendance.up)
 actions.single_target+=/lava_burst,target_if=dot.flame_shock.remains>2,if=buff.ascendance.up
 actions.single_target+=/lava_burst,target_if=dot.flame_shock.remains>2,if=talent.master_of_the_elements.enabled&!buff.master_of_the_elements.up&talent.fire_elemental.enabled
-actions.single_target+=/lava_burst,target_if=dot.flame_shock.remains>2,if=buff.stormkeeper.up&(buff.lava_surge.up|time<10)
-actions.single_target+=/earthquake,target_if=max:debuff.lightning_rod.remains,if=(buff.echoes_of_great_sundering_es.up|buff.echoes_of_great_sundering_eb.up|spell_targets.chain_lightning>1&!talent.echoes_of_great_sundering.enabled&!talent.elemental_blast.enabled)&(maelstrom>variable.mael_cap-15|debuff.lightning_rod.remains<gcd|fight_remains<5)
-actions.single_target+=/elemental_blast,target_if=max:debuff.lightning_rod.remains,if=maelstrom>variable.mael_cap-15|debuff.lightning_rod.remains<gcd|fight_remains<5
-actions.single_target+=/earth_shock,target_if=max:debuff.lightning_rod.remains,if=maelstrom>variable.mael_cap-15|debuff.lightning_rod.remains<gcd|fight_remains<5
+actions.single_target+=/lava_burst,target_if=dot.flame_shock.remains>2,if=buff.stormkeeper.up&talent.elemental_reverb.enabled&talent.earth_shock.enabled&time<10
+actions.single_target+=/earthquake,if=(buff.echoes_of_great_sundering_es.up|buff.echoes_of_great_sundering_eb.up|spell_targets.chain_lightning>1&!talent.echoes_of_great_sundering.enabled&!talent.elemental_blast.enabled)&(maelstrom>variable.mael_cap-35|fight_remains<5)
+actions.single_target+=/elemental_blast,target_if=min:debuff.lightning_rod.remains,if=maelstrom>variable.mael_cap-15|fight_remains<5
+actions.single_target+=/earth_shock,target_if=min:debuff.lightning_rod.remains,if=maelstrom>variable.mael_cap-15|fight_remains<5
 actions.single_target+=/lightning_bolt,if=buff.surge_of_power.up
 actions.single_target+=/icefury,if=!(buff.fusion_of_elements_nature.up|buff.fusion_of_elements_fire.up)
-actions.single_target+=/frost_shock,if=buff.icefury_dmg.up&(spell_targets.chain_lightning=1|buff.stormkeeper.up)&talent.surge_of_power.enabled
+actions.single_target+=/frost_shock,if=buff.icefury_dmg.up&(spell_targets.chain_lightning=1|buff.stormkeeper.up&talent.surge_of_power.enabled)
 actions.single_target+=/chain_lightning,if=buff.power_of_the_maelstrom.up&spell_targets.chain_lightning>1&!buff.stormkeeper.up
 actions.single_target+=/lightning_bolt,if=buff.power_of_the_maelstrom.up&!buff.stormkeeper.up
 actions.single_target+=/lava_burst,target_if=dot.flame_shock.remains>2,if=talent.deeply_rooted_elements.enabled
-actions.single_target+=/chain_lightning,if=spell_targets.chain_lightning>1
+actions.single_target+=/chain_lightning,if=spell_targets.chain_lightning>1&!buff.stormkeeper.up
 actions.single_target+=/lightning_bolt
 actions.single_target+=/flame_shock,moving=1,target_if=refreshable
 actions.single_target+=/flame_shock,moving=1,if=movement.distance>6
@@ -2790,13 +2831,13 @@ actions.single_target+=/frost_shock,moving=1
 		(FlameShock:Down() and (not self.use_cds or not ((LiquidMagmaTotem.known and LiquidMagmaTotem:Ready()) or (PrimordialWave.known and PrimordialWave:Ready())))) or
 		(Player.enemies == 1 and SurgeOfPower:Down() and (FlameShock:Remains() < 2 or FlameShock:Ticking() == 0) and (not PrimordialWave.known or FlameShock:Remains() < PrimordialWave:Cooldown()) and (not LiquidMagmaTotem.known or FlameShock:Remains() < LiquidMagmaTotem:Cooldown())) or
 		(Player.enemies > 1 and (DeeplyRootedElements.known or AscendanceFlame.known or PrimordialWave.known or SearingFlames.known or MagmaChamber.known) and (
-			(not FlameShock:Max() and (not SurgeOfPower.known or (AscendanceFlame.known and AscendanceFlame:Ready(Player.gcd)) or (SurgeOfPower:Down() and Stormkeeper:Up()))) or
-			(FlameShock:Remains() < 6 and (not SurgeOfPower.known or (SurgeOfPower:Up() and Stormkeeper:Down())))
+			(not LiquidMagmaTotem.known and not FlameShock:Max() and (not SurgeOfPower.known or (AscendanceFlame.known and AscendanceFlame:Ready(Player.gcd)) or (SurgeOfPower:Down() and Stormkeeper:Up()))) or
+			(FireElemental.known and FlameShock:Remains() < 6 and (not SurgeOfPower.known or (SurgeOfPower:Up() and Stormkeeper:Down())))
 		))
 	) then
 		return FlameShock
 	end
-	if Tempest:Usable() then
+	if Tempest:Usable() and (not ArcDischarge.known or ArcDischarge:Down()) then
 		return Tempest
 	end
 	if Stormkeeper:Up() then
@@ -2840,16 +2881,19 @@ actions.single_target+=/frost_shock,moving=1
 		end
 	end
 	if StormElemental.known then
-		if Earthquake:Usable() and (Player.maelstrom.deficit < 15 or Stormkeeper:Up() or (MasterOfTheElements:Up() and not Stormkeeper:Ready(10))) and (
+		if Earthquake:Usable() and (Stormkeeper:Up() or (SurgeOfPower.known and not LiquidMagmaTotem.known and PrimordialWave.known and PrimordialWave:Ready(Player.gcd))) and (
 			(Player.enemies > 1 and not EchoesOfGreatSundering.known and not ElementalBlast.known) or
 			(EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up())
 		) then
 			return Earthquake
 		end
-		if ElementalBlast:Usable() and (Player.maelstrom.deficit < 15 or Stormkeeper:Up() or (MasterOfTheElements:Up() and not Stormkeeper:Ready(10))) then
+		if ElementalBlast:Usable() and Stormkeeper:Up() then
 			return ElementalBlast
 		end
-		if EarthShock:Usable() and (Player.maelstrom.deficit < 15 or Stormkeeper:Up() or (MasterOfTheElements:Up() and not Stormkeeper:Ready(10))) then
+		if EarthShock:Usable() and (
+			(Player.enemies == 1 and (Stormkeeper:Up() or (not Stormkeeper:Ready(10) and (MasterOfTheElements:Up() or LightningRod:Ticking() == 0)))) or
+			(Player.enemies > 1 and EchoesOfGreatSundering.known and EchoesOfGreatSundering:Down() and (Stormkeeper:Up() or (SurgeOfPower.known and not LiquidMagmaTotem.known and PrimordialWave.known and PrimordialWave:Ready(Player.gcd))))
+		) then
 			return EarthShock
 		end
 	end
@@ -2859,20 +2903,20 @@ actions.single_target+=/frost_shock,moving=1
 	if LavaBurst:Usable() and (
 		AscendanceFlame:Up() or
 		(FireElemental.known and MasterOfTheElements.known and MasterOfTheElements:Down()) or
-		(Stormkeeper:Up() and (LavaSurge:Up() or Player:TimeInCombat() < 10))
+		(EarthShock.known and ElementalReverb.known and Stormkeeper:Up() and Player:TimeInCombat() < 10)
 	) then
 		return LavaBurst
 	end
-	if Earthquake:Usable() and (Player.maelstrom.deficit < 15 or LightningRod:Remains() < Player.gcd or Target.timeToDie < 5) and (
+	if Earthquake:Usable() and (Player.maelstrom.deficit < 35 or Target.timeToDie < 5) and (
 		(Player.enemies > 1 and not EchoesOfGreatSundering.known and not ElementalBlast.known) or
 		(EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up())
 	) then
 		return Earthquake
 	end
-	if ElementalBlast:Usable() and (Player.maelstrom.deficit < 15 or LightningRod:Remains() < Player.gcd or Target.timeToDie < 5) then
+	if ElementalBlast:Usable() and (Player.maelstrom.deficit < 15 or Target.timeToDie < 5) then
 		return ElementalBlast
 	end
-	if EarthShock:Usable() and (Player.maelstrom.deficit < 15 or LightningRod:Remains() < Player.gcd or Target.timeToDie < 5) then
+	if EarthShock:Usable() and (Player.maelstrom.deficit < 15 or Target.timeToDie < 5) then
 		return EarthShock
 	end
 	if SurgeOfPower.known and LightningBolt:Usable() and SurgeOfPower:Up() then
@@ -2881,7 +2925,7 @@ actions.single_target+=/frost_shock,moving=1
 	if Icefury:Usable() and not (FusionOfElements.nature:Up() or FusionOfElements.fire:Up()) then
 		return Icefury
 	end
-	if SurgeOfPower.known and FrostShock:Usable() and Icefury.damage:Up() and (Player.enemies == 1 or Stormkeeper:Up()) then
+	if FrostShock:Usable() and Icefury.damage:Up() and (Player.enemies == 1 or (SurgeOfPower.known and Stormkeeper:Up())) then
 		return FrostShock
 	end
 	if ChainLightning:Usable() and Player.enemies > 1 and PowerOfTheMaelstrom:Up() and Stormkeeper:Down() then
@@ -2893,7 +2937,7 @@ actions.single_target+=/frost_shock,moving=1
 	if DeeplyRootedElements.known and LavaBurst:Usable() then
 		return LavaBurst
 	end
-	if ChainLightning:Usable() and Player.enemies > 1 then
+	if ChainLightning:Usable() and Player.enemies > 1 and Stormkeeper:Down() then
 		return ChainLightning
 	end
 	if LightningBolt:Usable() then
@@ -3999,6 +4043,8 @@ function UI:UpdateDisplay()
 	end
 	if FeralSpirit.known and FeralSpirit.active > 0 then
 		text_tr = FeralSpirit.active
+	elseif CallOfTheAncestors.known and CallOfTheAncestors.active > 0 then
+		text_tr = CallOfTheAncestors.active
 	end
 	if Player.major_cd_remains > 0 then
 		text_center = format('%.1fs', Player.major_cd_remains)
