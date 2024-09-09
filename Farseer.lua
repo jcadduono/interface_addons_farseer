@@ -282,10 +282,6 @@ local Player = {
 		last_taken = 0,
 	},
 	set_bonus = {
-		t29 = 0, -- Elements of Infused Earth
-		t30 = 0, -- Runes of the Cinderwolf
-		t31 = 0, -- Vision of the Greatwolf Outcast
-		t32 = 0, -- Vision of the Greatwolf Outcast (Awakened)
 		t33 = 0, -- Waves of the Forgotten Reservoir
 	},
 	previous_gcd = {},-- list of previous GCD abilities
@@ -3006,7 +3002,6 @@ actions.cds+=/berserking,if=(buff.ascendance.up|buff.feral_spirit.up|buff.doom_w
 actions.cds+=/fireblood,if=(buff.ascendance.up|buff.feral_spirit.up|buff.doom_winds.up|(fight_remains%%action.fireblood.cooldown<=action.fireblood.duration)|(variable.min_talented_cd_remains>=action.fireblood.cooldown)|(!talent.ascendance.enabled&!talent.feral_spirit.enabled&!talent.doom_winds.enabled))
 actions.cds+=/ancestral_call,if=(buff.ascendance.up|buff.feral_spirit.up|buff.doom_winds.up|(fight_remains%%action.ancestral_call.cooldown<=action.ancestral_call.duration)|(variable.min_talented_cd_remains>=action.ancestral_call.cooldown)|(!talent.ascendance.enabled&!talent.feral_spirit.enabled&!talent.doom_winds.enabled))
 actions.cds+=/invoke_external_buff,name=power_infusion,if=(buff.ascendance.up|buff.feral_spirit.up|buff.doom_winds.up|(fight_remains%%120<=20)|(variable.min_talented_cd_remains>=120)|(!talent.ascendance.enabled&!talent.feral_spirit.enabled&!talent.doom_winds.enabled))
-actions.cds+=/primordial_wave,if=set_bonus.tier31_2pc&(raid_event.adds.in>(action.primordial_wave.cooldown%(1+set_bonus.tier31_4pc))|raid_event.adds.in<6)
 actions.cds+=/feral_spirit,if=talent.elemental_spirits.enabled|(talent.alpha_wolf.enabled&active_enemies>1)
 actions.cds+=/surging_totem
 actions.cds+=/ascendance,if=dot.flame_shock.ticking&((ti_lightning_bolt&active_enemies=1&raid_event.adds.in>=action.ascendance.cooldown%2)|(ti_chain_lightning&active_enemies>1))
@@ -3017,9 +3012,6 @@ actions.cds+=/ascendance,if=dot.flame_shock.ticking&((ti_lightning_bolt&active_e
 		elseif Trinket2:Usable() then
 			return UseCooldown(Trinket2)
 		end
-	end
-	if PrimordialWave:Usable() and Player.set_bonus.t31 >= 2 then
-		return UseCooldown(PrimordialWave)
 	end
 	if FeralSpirit:Usable() and (ElementalSpirits.known or (AlphaWolf.known and Player.enemies > 1)) then
 		return UseCooldown(FeralSpirit)
@@ -3135,9 +3127,8 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 		return CrashLightning
 	end
 	if self.use_cds and Sundering:Usable() and (
-		DoomWinds:Up() or
-		Player.set_bonus.t30 >= 2 or
-		Earthsurge.known
+		Earthsurge.known or
+		(DoomWinds.known and DoomWinds:Up())
 	) then
 		UseCooldown(Sundering)
 	end
@@ -3352,7 +3343,6 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 	end
 	if self.use_cds and Sundering:Usable() and (
 		Earthsurge.known or
-		Player.set_bonus.t30 >= 2 or
 		(DoomWinds.known and DoomWinds:Up())
 	) then
 		UseCooldown(Sundering)
@@ -4397,10 +4387,6 @@ function Events:PLAYER_EQUIPMENT_CHANGED()
 		end
 	end
 
-	Player.set_bonus.t29 = (Player:Equipped(200396) and 1 or 0) + (Player:Equipped(200398) and 1 or 0) + (Player:Equipped(200399) and 1 or 0) + (Player:Equipped(200400) and 1 or 0) + (Player:Equipped(200401) and 1 or 0)
-	Player.set_bonus.t30 = (Player:Equipped(202468) and 1 or 0) + (Player:Equipped(202469) and 1 or 0) + (Player:Equipped(202470) and 1 or 0) + (Player:Equipped(202471) and 1 or 0) + (Player:Equipped(202473) and 1 or 0)
-	Player.set_bonus.t31 = (Player:Equipped(207207) and 1 or 0) + (Player:Equipped(207208) and 1 or 0) + (Player:Equipped(207209) and 1 or 0) + (Player:Equipped(207210) and 1 or 0) + (Player:Equipped(207212) and 1 or 0)
-	Player.set_bonus.t32 = (Player:Equipped(217236) and 1 or 0) + (Player:Equipped(217237) and 1 or 0) + (Player:Equipped(217238) and 1 or 0) + (Player:Equipped(217239) and 1 or 0) + (Player:Equipped(217240) and 1 or 0)
 	Player.set_bonus.t33 = (Player:Equipped(212009) and 1 or 0) + (Player:Equipped(212010) and 1 or 0) + (Player:Equipped(212011) and 1 or 0) + (Player:Equipped(212012) and 1 or 0) + (Player:Equipped(212014) and 1 or 0)
 
 	Player:UpdateKnown()
