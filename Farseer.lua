@@ -1308,6 +1308,7 @@ local FeralSpirit = Ability:Add(51533, true, true, 333957)
 FeralSpirit.buff_duration = 15
 FeralSpirit.cooldown_duration = 180
 FeralSpirit.summon_count = 2
+FeralSpirit.active = 0
 local FireNova = Ability:Add(333974, false, true, 333977)
 FireNova.mana_cost = 0.2
 FireNova.cooldown_duration = 15
@@ -1973,6 +1974,7 @@ function Player:Update()
 			MaelstromWeapon.current = MaelstromWeapon:Stack()
 		end
 		MaelstromWeapon.deficit = MaelstromWeapon.max - MaelstromWeapon.current
+		FeralSpirit.active = Pet.SpiritWolf:Count() + (ElementalSpirits.known and Pet.ElementalSpiritWolf:Count())
 	end
 	speed_mh, speed_oh = UnitAttackSpeed('player')
 	self.swing.mh.speed = speed_mh or 0
@@ -3103,8 +3105,8 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 	end
 	if ElementalBlast:Usable() and MaelstromWeapon.deficit == 0 and (not CrashingStorms.known or Player.enemies <= 3) and (
 		not ElementalSpirits.known or
-		ElementalBlast:Charges() >= ElementalBlast:MaxCharges() or
-		Pet.ElementalSpiritWolf:Count() >= 2
+		FeralSpirit.active >= 2 or
+		ElementalBlast:Charges() >= ElementalBlast:MaxCharges()
 	) then
 		return ElementalBlast
 	end
@@ -3122,7 +3124,7 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 	if CrashLightning:Usable() and (
 		CrashLightning.buff:Down() or
 		(DoomWinds.known and DoomWinds:Up()) or
-		(AlphaWolf.known and Pet.SpiritWolf:Up() and AlphaWolf:MinRemains() == 0)
+		(AlphaWolf.known and FeralSpirit.active > 0 and AlphaWolf:MinRemains() == 0)
 	) then
 		return CrashLightning
 	end
@@ -3194,8 +3196,8 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 	if MaelstromWeapon.current >= 5 and not self.pool_primordial_mw then
 		if ElementalBlast:Usable() and (not CrashingStorms.known or Player.enemies <= 3) and (
 			not ElementalSpirits.known or
-			ElementalBlast:Charges() >= ElementalBlast:MaxCharges() or
-			Pet.ElementalSpiritWolf:Count() >= 2
+			FeralSpirit.active >= 2 or
+			ElementalBlast:Charges() >= ElementalBlast:MaxCharges()
 		) then
 			return ElementalBlast
 		end
@@ -3283,7 +3285,7 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 	) then
 		return LightningBolt
 	end
-	if ElementalSpirits.known and ElementalBlast:Usable() and not self.pool_primordial_mw and MaelstromWeapon.current >= 5 and Pet.ElementalSpiritWolf:Count() >= 4 then
+	if ElementalSpirits.known and ElementalBlast:Usable() and not self.pool_primordial_mw and MaelstromWeapon.current >= 5 and FeralSpirit.active >= 4 then
 		return ElementalBlast
 	end
 	if Supercharge.known and LightningBolt:Usable() and MaelstromWeapon.deficit == 0 and (self.expectedLbFunnel > self.expectedClFunnel) then
@@ -3306,8 +3308,8 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 	end
 	if ElementalBlast:Usable() and MaelstromWeapon.deficit == 0 and (
 		not ElementalSpirits.known or
-		ElementalBlast:Charges() >= ElementalBlast:MaxCharges() or
-		Pet.ElementalSpiritWolf:Up()
+		FeralSpirit.active > 0 or
+		ElementalBlast:Charges() >= ElementalBlast:MaxCharges()
 	) then
 		return ElementalBlast
 	end
@@ -3336,7 +3338,7 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 	if CrashLightning:Usable() and (
 		CrashLightning.buff:Down() or
 		(DoomWinds.known and DoomWinds:Up()) or
-		(AlphaWolf.known and Pet.SpiritWolf:Up() and AlphaWolf:MinRemains() == 0) or
+		(AlphaWolf.known and FeralSpirit.active > 0 and AlphaWolf:MinRemains() == 0) or
 		(ConvergingStorms.known and ConvergingStorms:Stack() < ConvergingStorms:MaxStack())
 	) then
 		return CrashLightning
@@ -3400,8 +3402,8 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 	if MaelstromWeapon.current >= 5 and not self.pool_primordial_mw then
 		if ElementalBlast:Usable() and (
 			not ElementalSpirits.known or
-			ElementalBlast:Charges() >= ElementalBlast:MaxCharges() or
-			Pet.ElementalSpiritWolf:Up()
+			FeralSpirit.active > 0 or
+			ElementalBlast:Charges() >= ElementalBlast:MaxCharges()
 		) then
 			return ElementalBlast
 		end
@@ -3488,13 +3490,13 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 		if Tempest:Usable() and ((MaelstromWeapon.deficit == 0 and Tempest:Stack() >= Tempest:MaxStack()) or Tempest.buff:Remains() < (Player.gcd * 3)) then
 			return Tempest
 		end
-		if ElementalSpirits.known and ElementalBlast:Usable() and Pet.ElementalSpiritWolf:Count() >= 2 and Pet.ElementalSpiritWolf:Remains() <= (Player.gcd * 2) then
+		if ElementalSpirits.known and ElementalBlast:Usable() and FeralSpirit.active >= 2 and FeralSpirit:Remains() <= (Player.gcd * 2) then
 			return ElementalBlast
 		end
 		if Tempest:Usable() and (MaelstromWeapon.deficit == 0 or (Tempest:Maelstrom() > 30 or AwakeningStorms.buff:Stack() >= 2)) then
 			return Tempest
 		end
-		if ElementalSpirits.known and ElementalBlast:Usable() and MaelstromWeapon.deficit == 0 and ElementalBlast:ChargesFractional() >= 1.8 and Pet.ElementalSpiritWolf:Count() >= 8 then
+		if ElementalSpirits.known and ElementalBlast:Usable() and MaelstromWeapon.deficit == 0 and ElementalBlast:ChargesFractional() >= 1.8 and FeralSpirit.active >= 8 then
 			return ElementalBlast
 		end
 	end
@@ -3520,8 +3522,8 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 			return Tempest
 		end
 		if ElementalSpirits.known and ElementalBlast:Usable() and (
-			(not Tempest.known and Pet.ElementalSpiritWolf:Count() >= 4) or
-			(MaelstromWeapon.current >= 8 and (Pet.ElementalSpiritWolf:Count() >= 7 or (ElementalBlast:ChargesFractional() >= 1.8 and Pet.ElementalSpiritWolf:Count() >= 1)) and (IcyEdge:Up() or MoltenWeapon:Up()) and not FeralSpirit:Ready(3))
+			(not Tempest.known and FeralSpirit.active >= 4) or
+			(MaelstromWeapon.current >= 8 and (FeralSpirit.active >= 7 or (ElementalBlast:ChargesFractional() >= 1.8 and FeralSpirit.active >= 1)) and (IcyEdge:Up() or MoltenWeapon:Up()) and not FeralSpirit:Ready(3))
 		) then
 			return ElementalBlast
 		end
@@ -3549,7 +3551,7 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 		if LightningBolt:Usable() and MaelstromWeapon.current >= 8 and PrimordialWave.buff:Up() and (SplinteredElements:Down() or Target.timeToDie <= 12) then
 			return LightningBolt
 		end
-		if ElementalBlast:Usable() and MaelstromWeapon.current >= 8 and (not ElementalSpirits.known or Pet.ElementalSpiritWolf:Count() >= 2) then
+		if ElementalBlast:Usable() and MaelstromWeapon.current >= 8 and (not ElementalSpirits.known or FeralSpirit.active >= 2) then
 			return ElementalBlast
 		end
 		if not ThorimsInvocation.known and LavaBurst:Usable() then
@@ -3569,7 +3571,7 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if LightningBolt:Usable() and MaelstromWeapon.current >= (8 - (StaticAccumulation.known and 3 or 0)) and PrimordialWave.buff:Down() then
 		return LightningBolt
 	end
-	if AlphaWolf.known and CrashLightning:Usable() and Pet.SpiritWolf:Up() and AlphaWolf:MinRemains() == 0 then
+	if AlphaWolf.known and CrashLightning:Usable() and FeralSpirit.active > 0 and AlphaWolf:MinRemains() == 0 then
 		return CrashLightning
 	end
 	if not Tempest.known and FlameShock:Usable() and FlameShock:Down() then
@@ -3938,7 +3940,7 @@ end
 
 function UI:UpdateDisplay()
 	Timer.display = 0
-	local border, dim, dim_cd, text_cd, text_center, text_tl
+	local border, dim, dim_cd, text_cd, text_center, text_tl, text_tr
 	local channel = Player.channel
 
 	if Opt.dimmer then
@@ -3992,8 +3994,11 @@ function UI:UpdateDisplay()
 			end
 		end
 	end
-	if MaelstromWeapon.known then
+	if MaelstromWeapon.known and MaelstromWeapon.current > 0 then
 		text_tl = MaelstromWeapon.current
+	end
+	if FeralSpirit.known and FeralSpirit.active > 0 then
+		text_tr = FeralSpirit.active
 	end
 	if Player.major_cd_remains > 0 then
 		text_center = format('%.1fs', Player.major_cd_remains)
@@ -4005,6 +4010,7 @@ function UI:UpdateDisplay()
 	farseerPanel.dimmer:SetShown(dim)
 	farseerPanel.text.center:SetText(text_center)
 	farseerPanel.text.tl:SetText(text_tl)
+	farseerPanel.text.tr:SetText(text_tr)
 	--farseerPanel.text.bl:SetText(format('%.1fs', Target.timeToDie))
 	farseerCooldownPanel.text:SetText(text_cd)
 	farseerCooldownPanel.dimmer:SetShown(dim_cd)
