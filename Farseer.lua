@@ -1174,6 +1174,7 @@ SurgingTotem.summon_count = 1
 local Tempest = Ability:Add(452201, false, true)
 Tempest.learn_spellId = 454009
 Tempest.mana_cost = 0.2
+Tempest.max_stack = 2
 Tempest.maelstrom_spent = 0
 Tempest.consume_mw = true
 Tempest.requires_react = true
@@ -1379,12 +1380,8 @@ Stormbringer.buff_duration = 12
 -- Aliases
 local Stormkeeper = StormkeeperEle
 -- Tier set bonuses
-local CracklingThunder = Ability:Add(409834, true, true) -- T30 4pc (Enhancement)
-CracklingThunder.buff_duration = 15
 local MaelstromSurge = Ability:Add(457727, true, true) -- T33 4pc (Elemental)
 MaelstromSurge.buff_duration = 5
-local VolcanicStrength = Ability:Add(409833, true, true) -- T30 4pc (Enhancement)
-VolcanicStrength.buff_duration = 15
 -- Racials
 
 -- PvP talents
@@ -1825,10 +1822,6 @@ function Player:UpdateKnown()
 		FrostShock.hasted_cooldown = true
 		if ElementalBlast.known then
 			LavaBurst.known = false
-		end
-		if self.set_bonus.t30 >= 4 then
-			CracklingThunder.known = true
-			VolcanicStrength.known = true
 		end
 		Stormkeeper = StormkeeperEnh
 	else
@@ -3058,7 +3051,7 @@ actions.aoe+=/chain_lightning,target_if=min:debuff.lightning_rod.remains,if=buff
 actions.aoe+=/feral_spirit
 actions.aoe+=/doom_winds
 actions.aoe+=/crash_lightning,if=buff.doom_winds.up|!buff.crash_lightning.up|(talent.alpha_wolf.enabled&feral_spirit.active&alpha_wolf_min_remains=0)
-actions.aoe+=/sundering,if=buff.doom_winds.up|set_bonus.tier30_2pc|talent.earthsurge.enabled
+actions.aoe+=/sundering,if=buff.doom_winds.up|talent.earthsurge.enabled
 actions.aoe+=/fire_nova,if=active_dot.flame_shock=6|(active_dot.flame_shock>=4&active_dot.flame_shock=active_enemies)
 actions.aoe+=/lava_lash,target_if=min:debuff.lashing_flames.remains,if=talent.lashing_flames.enabled
 actions.aoe+=/lava_lash,if=talent.molten_assault.enabled&dot.flame_shock.ticking
@@ -3086,7 +3079,7 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 		(MaelstromWeapon.current >= 5 and (
 			Tempest:Maelstrom() > 30 or
 			AwakeningStorms.buff:Stack() >= 2 or
-			Tempest.buff:Remains() < (Player.gcd * 2) or
+			Tempest.buff:Remains() < (Player.gcd * 3) or
 			(PrimordialWave.known and PrimordialWave.buff:Up() and PrimordialWave.buff:Remains() < (Player.gcd * 2))
 		))
 	) then
@@ -3242,12 +3235,11 @@ actions.funnel+=/elemental_blast,if=(!talent.elemental_spirits.enabled|(talent.e
 actions.funnel+=/feral_spirit
 actions.funnel+=/doom_winds
 actions.funnel+=/stormstrike,if=buff.converging_storms.stack=buff.converging_storms.max_stack
-actions.funnel+=/chain_lightning,if=buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack&buff.crackling_thunder.up
-actions.funnel+=/lava_burst,if=(buff.molten_weapon.stack+buff.volcanic_strength.up>buff.crackling_surge.stack)&buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack
+actions.funnel+=/lava_burst,if=buff.molten_weapon.stack>buff.crackling_surge.stack&buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack
 actions.funnel+=/lightning_bolt,if=buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack&(variable.expected_lb_funnel>variable.expected_cl_funnel)
 actions.funnel+=/chain_lightning,if=buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack
 actions.funnel+=/crash_lightning,if=buff.doom_winds.up|!buff.crash_lightning.up|(talent.alpha_wolf.enabled&feral_spirit.active&alpha_wolf_min_remains=0)|(talent.converging_storms.enabled&buff.converging_storms.stack<buff.converging_storms.max_stack)
-actions.funnel+=/sundering,if=buff.doom_winds.up|set_bonus.tier30_2pc|talent.earthsurge.enabled
+actions.funnel+=/sundering,if=buff.doom_winds.up|talent.earthsurge.enabled
 actions.funnel+=/fire_nova,if=active_dot.flame_shock=6|(active_dot.flame_shock>=4&active_dot.flame_shock=active_enemies)
 actions.funnel+=/ice_strike,if=talent.hailstorm.enabled&!buff.ice_strike.up
 actions.funnel+=/frost_shock,if=talent.hailstorm.enabled&buff.hailstorm.up
@@ -3264,7 +3256,7 @@ actions.funnel+=/lava_lash
 actions.funnel+=/crash_lightning
 actions.funnel+=/fire_nova,if=active_dot.flame_shock>=2
 actions.funnel+=/elemental_blast,if=(!talent.elemental_spirits.enabled|(talent.elemental_spirits.enabled&(charges=max_charges|buff.feral_spirit.up)))&buff.maelstrom_weapon.stack>=5
-actions.funnel+=/lava_burst,if=(buff.molten_weapon.stack+buff.volcanic_strength.up>buff.crackling_surge.stack)&buff.maelstrom_weapon.stack>=5
+actions.funnel+=/lava_burst,if=buff.molten_weapon.stack>buff.crackling_surge.stack&buff.maelstrom_weapon.stack>=5
 actions.funnel+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&(variable.expected_lb_funnel>variable.expected_cl_funnel)
 actions.funnel+=/chain_lightning,if=buff.maelstrom_weapon.stack>=5
 actions.funnel+=/flame_shock,if=!ticking
@@ -3284,7 +3276,7 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 		(MaelstromWeapon.current >= 5 and (
 			Tempest:Maelstrom() > 30 or
 			AwakeningStorms.buff:Stack() >= 2 or
-			Tempest.buff:Remains() < (Player.gcd * 2) or
+			Tempest.buff:Remains() < (Player.gcd * 3) or
 			(PrimordialWave.known and PrimordialWave.buff:Up() and PrimordialWave.buff:Remains() < (Player.gcd * 2))
 		))
 	) then
@@ -3340,10 +3332,7 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 		return Stormstrike
 	end
 	if MaelstromWeapon.deficit == 0 then
-		if ChainLightning:Usable() and CracklingThunder:Up() then
-			return ChainLightning
-		end
-		if LavaBurst:Usable() and (MoltenWeapon:Stack() + (VolcanicStrength:Up() and 1 or 0)) > CracklingSurge:Stack() then
+		if LavaBurst:Usable() and MoltenWeapon:Stack() > CracklingSurge:Stack() then
 			return LavaBurst
 		end
 		if LightningBolt:Usable() and (self.expectedLbFunnel > self.expectedClFunnel) then
@@ -3426,7 +3415,7 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 		) then
 			return ElementalBlast
 		end
-		if LavaBurst:Usable() and (MoltenWeapon:Stack() + (VolcanicStrength:Up() and 1 or 0)) > CracklingSurge:Stack() then
+		if LavaBurst:Usable() and MoltenWeapon:Stack() > CracklingSurge:Stack() then
 			return LavaBurst
 		end
 		if LightningBolt:Usable() and self.expectedLbFunnel > self.expectedClFunnel then
@@ -3448,33 +3437,39 @@ APL[SPEC.ENHANCEMENT].single = function(self)
 --[[
 actions.single=windstrike,if=talent.thorims_invocation.enabled&buff.maelstrom_weapon.stack>1&ti_lightning_bolt&!talent.elemental_spirits.enabled
 actions.single+=/feral_spirit
-actions.single+=/tempest,if=buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack|(buff.maelstrom_weapon.stack>=5&(tempest_mael_count>30|buff.awakening_storms.stack=2))
-actions.single+=/doom_winds,if=raid_event.adds.in>=action.doom_winds.cooldown
+actions.single+=/elemental_blast,if=buff.tempest.stack<buff.tempest.max_stack&buff.maelstrom_weapon.stack>=5&talent.elemental_spirits.enabled&feral_spirit.active>=2&feral_spirit.remains<=2*gcd
+actions.single+=/tempest,if=buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack|(buff.tempest.stack=buff.tempest.max_stack&(tempest_mael_count>30|buff.awakening_storms.stack=2)&buff.maelstrom_weapon.stack>=5)
+actions.single+=/elemental_blast,if=buff.maelstrom_weapon.stack>=10&talent.elemental_spirits.enabled&feral_spirit.active>=8&charges_fractional>=1.8
+actions.single+=/doom_winds,if=raid_event.adds.in>=action.doom_winds.cooldown&!talent.elemental_spirits.enabled
 actions.single+=/windstrike,if=talent.thorims_invocation.enabled&buff.maelstrom_weapon.stack>1&ti_lightning_bolt
 actions.single+=/sundering,if=buff.ascendance.up&pet.surging_totem.active&talent.earthsurge.enabled
-actions.single+=/primordial_wave,if=!dot.flame_shock.ticking&talent.lashing_flames.enabled&(raid_event.adds.in>(action.primordial_wave.cooldown%(1+set_bonus.tier31_4pc))|raid_event.adds.in<6)
+actions.single+=/primordial_wave,if=!dot.flame_shock.ticking&talent.lashing_flames.enabled&(raid_event.adds.in>action.primordial_wave.cooldown|raid_event.adds.in<6)
 actions.single+=/flame_shock,if=!ticking&talent.lashing_flames.enabled
-actions.single+=/elemental_blast,if=buff.maelstrom_weapon.stack>=5&talent.elemental_spirits.enabled&feral_spirit.active>=4
-actions.single+=/lightning_bolt,if=talent.supercharge.enabled&buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack
-actions.single+=/sundering,if=set_bonus.tier30_2pc&raid_event.adds.in>=action.sundering.cooldown
-actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.crackling_thunder.down&buff.ascendance.up&ti_chain_lightning&(buff.ascendance.remains>(cooldown.strike.remains+gcd))
+actions.single+=/tempest,if=buff.maelstrom_weapon.stack>=(8-(talent.elemental_spirits.enabled+talent.elemental_blast.enabled))
+actions.single+=/elemental_blast,if=buff.maelstrom_weapon.stack>=5&talent.elemental_spirits.enabled&feral_spirit.active>=4&!talent.tempest.enabled
+actions.single+=/elemental_blast,if=buff.maelstrom_weapon.stack>=8&feral_spirit.active>=7&(buff.icy_edge.up|buff.molten_weapon.up)&cooldown.feral_spirit.remains>=3
+actions.single+=/elemental_blast,if=buff.maelstrom_weapon.stack>=8&feral_spirit.active>=1&(buff.icy_edge.stack+buff.molten_weapon.stack>=1)&charges_fractional>=1.8&cooldown.feral_spirit.remains>=3
+actions.single+=/lightning_bolt,if=talent.tempest.enabled&buff.maelstrom_weapon.stack>=(buff.maelstrom_weapon.max_stack-talent.elemental_spirits.enabled*(talent.supercharge.enabled+talent.static_accumulation.enabled))
+actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.ascendance.up&ti_chain_lightning&(buff.ascendance.remains>(cooldown.strike.remains+gcd))
 actions.single+=/stormstrike,if=!talent.elemental_spirits.enabled&(buff.doom_winds.up|talent.deeply_rooted_elements.enabled|(talent.stormblast.enabled&buff.stormbringer.up))
 actions.single+=/lava_lash,if=buff.hot_hand.up
 actions.single+=/elemental_blast,if=buff.maelstrom_weapon.stack>=5&charges=max_charges
-actions.single+=/tempest,if=buff.maelstrom_weapon.stack>=8
 actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=8&buff.primordial_wave.up&raid_event.adds.in>buff.primordial_wave.remains&(!buff.splintered_elements.up|fight_remains<=12)
-actions.single+=/chain_lightning,if=buff.maelstrom_weapon.stack>=8&buff.crackling_thunder.up&talent.elemental_spirits.enabled
 actions.single+=/elemental_blast,if=buff.maelstrom_weapon.stack>=8&(feral_spirit.active>=2|!talent.elemental_spirits.enabled)
 actions.single+=/lava_burst,if=!talent.thorims_invocation.enabled&buff.maelstrom_weapon.stack>=5
+actions.single+=/primordial_wave,if=raid_event.adds.in>action.primordial_wave.cooldown|raid_event.adds.in<6
+actions.single+=/stormstrike,if=talent.elemental_spirits.enabled&(buff.doom_winds.up|talent.deeply_rooted_elements.enabled|(talent.stormblast.enabled&buff.stormbringer.up))
 actions.single+=/lightning_bolt,if=((buff.maelstrom_weapon.stack>=8)|(talent.static_accumulation.enabled&buff.maelstrom_weapon.stack>=5))&buff.primordial_wave.down
 actions.single+=/crash_lightning,if=talent.alpha_wolf.enabled&feral_spirit.active&alpha_wolf_min_remains=0
-actions.single+=/primordial_wave,if=raid_event.adds.in>(action.primordial_wave.cooldown%(1+set_bonus.tier31_4pc))|raid_event.adds.in<6
-actions.single+=/stormstrike,if=talent.elemental_spirits.enabled&(buff.doom_winds.up|talent.deeply_rooted_elements.enabled|(talent.stormblast.enabled&buff.stormbringer.up))
-actions.single+=/flame_shock,if=!ticking
+actions.single+=/flame_shock,if=!ticking&!talent.tempest.enabled
 actions.single+=/windstrike,if=(talent.totemic_rebound.enabled&(time-(action.stormstrike.last_used<?action.windstrike.last_used))>=3.5)|(talent.awakening_storms.enabled&(time-(action.stormstrike.last_used<?action.windstrike.last_used<?action.lightning_bolt.last_used<?action.tempest.last_used<?action.chain_lightning.last_used))>=3.5)
 actions.single+=/stormstrike,if=(talent.totemic_rebound.enabled&(time-(action.stormstrike.last_used<?action.windstrike.last_used))>=3.5)|(talent.awakening_storms.enabled&(time-(action.stormstrike.last_used<?action.windstrike.last_used<?action.lightning_bolt.last_used<?action.tempest.last_used<?action.chain_lightning.last_used))>=3.5)
 actions.single+=/lava_lash,if=talent.lively_totems.enabled&(time-action.lava_lash.last_used>=3.5)
+actions.single+=/doom_winds,if=raid_event.adds.in>=action.doom_winds.cooldown&talent.elemental_spirits.enabled
 actions.single+=/ice_strike,if=talent.elemental_assault.enabled&talent.swirling_maelstrom.enabled
+actions.single+=/lava_lash,if=talent.elemental_assault.enabled&talent.tempest.enabled&talent.molten_assault.enabled&dot.flame_shock.ticking
+actions.single+=/frost_shock,if=buff.hailstorm.up&buff.ice_strike.up&talent.swirling_maelstrom.enabled&talent.tempest.enabled
+actions.single+=/flame_shock,if=!ticking
 actions.single+=/lava_lash,if=talent.lashing_flames.enabled
 actions.single+=/ice_strike,if=!buff.ice_strike.up
 actions.single+=/frost_shock,if=buff.hailstorm.up
@@ -3491,7 +3486,6 @@ actions.single+=/crash_lightning
 actions.single+=/fire_nova,if=active_dot.flame_shock
 actions.single+=/earth_elemental
 actions.single+=/flame_shock
-actions.single+=/chain_lightning,if=buff.maelstrom_weapon.stack>=5&buff.crackling_thunder.up&talent.elemental_spirits.enabled
 actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordial_wave.down
 ]]
 	if ThorimsInvocation.known and not ElementalSpirits.known and Windstrike:Usable() and MaelstromWeapon.current > 1 and ThorimsInvocation:LightningBolt() then
@@ -3500,13 +3494,21 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if self.use_cds and FeralSpirit:Usable() then
 		UseCooldown(FeralSpirit)
 	end
-	if Tempest:Usable() and (
-		MaelstromWeapon.deficit == 0 or
-		(MaelstromWeapon.current >= 5 and (Tempest:Maelstrom() > 30 or AwakeningStorms.buff:Stack() >= 2 or Tempest.buff:Remains() < 4))
-	) then
-		return Tempest
+	if MaelstromWeapon.current >= 5 then
+		if Tempest:Usable() and ((MaelstromWeapon.deficit == 0 and Tempest:Stack() >= Tempest:MaxStack()) or Tempest.buff:Remains() < (Player.gcd * 3)) then
+			return Tempest
+		end
+		if ElementalSpirits.known and ElementalBlast:Usable() and Pet.ElementalSpiritWolf:Count() >= 2 and Pet.ElementalSpiritWolf:Remains() <= (Player.gcd * 2) then
+			return ElementalBlast
+		end
+		if Tempest:Usable() and (MaelstromWeapon.deficit == 0 or (Tempest:Maelstrom() > 30 or AwakeningStorms.buff:Stack() >= 2)) then
+			return Tempest
+		end
+		if ElementalSpirits.known and ElementalBlast:Usable() and MaelstromWeapon.deficit == 0 and ElementalBlast:ChargesFractional() >= 1.8 and Pet.ElementalSpiritWolf:Count() >= 8 then
+			return ElementalBlast
+		end
 	end
-	if self.use_cds and DoomWinds:Usable() then
+	if self.use_cds and not ElementalSpirits.known and DoomWinds:Usable() then
 		UseCooldown(DoomWinds)
 	end
 	if ThorimsInvocation.known and Windstrike:Usable() and MaelstromWeapon.current > 1 and ThorimsInvocation:LightningBolt() then
@@ -3523,17 +3525,22 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 			return FlameShock
 		end
 	end
-	if ElementalSpirits.known and ElementalBlast:Usable() and MaelstromWeapon.current >= 5 and Pet.ElementalSpiritWolf:Count() >= 4 then
-		return ElementalBlast
-	end
-	if Supercharge.known and LightningBolt:Usable() and MaelstromWeapon.deficit == 0 then
-		return LightningBolt
-	end
-	if self.use_cds and Sundering:Usable() and Player.set_bonus.t30 >= 2 then
-		UseCooldown(Sundering)
-	end
-	if LightningBolt:Usable() and MaelstromWeapon.current >= 5 and CracklingThunder:Down() and AscendanceAir:Up() and ThorimsInvocation:ChainLightning() and AscendanceAir:Remains() > (Windstrike:Cooldown() + Player.gcd) then
-		return LightningBolt
+	if MaelstromWeapon.current >= 5 then
+		if Tempest:Usable() and MaelstromWeapon.current >= (8 - (ElementalSpirits.known and 1 or 0) - (ElementalBlast.known and 1 or 0)) then
+			return Tempest
+		end
+		if ElementalSpirits.known and ElementalBlast:Usable() and (
+			(not Tempest.known and Pet.ElementalSpiritWolf:Count() >= 4) or
+			(MaelstromWeapon.current >= 8 and (Pet.ElementalSpiritWolf:Count() >= 7 or (ElementalBlast:ChargesFractional() >= 1.8 and Pet.ElementalSpiritWolf:Count() >= 1)) and (IcyEdge:Up() or MoltenWeapon:Up()) and not FeralSpirit:Ready(3))
+		) then
+			return ElementalBlast
+		end
+		if Tempest.known and LightningBolt:Usable() and MaelstromWeapon.deficit <= (ElementalSpirits.known and ((Supercharge.known and 1 or 0) + (StaticAccumulation.known and 1 or 0)) or 0) then
+			return LightningBolt
+		end
+		if LightningBolt:Usable() and AscendanceAir:Up() and ThorimsInvocation:ChainLightning() and AscendanceAir:Remains() > (Windstrike:Cooldown() + Player.gcd) then
+			return LightningBolt
+		end
 	end
 	if not ElementalSpirits.known and Stormstrike:Usable() and (
 		DeeplyRootedElements.known or
@@ -3549,14 +3556,8 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 		if ElementalBlast:Usable() and ElementalBlast:Charges() >= ElementalBlast:MaxCharges() then
 			return ElementalBlast
 		end
-		if Tempest:Usable() and MaelstromWeapon.current >= 8 then
-			return Tempest
-		end
 		if LightningBolt:Usable() and MaelstromWeapon.current >= 8 and PrimordialWave.buff:Up() and (SplinteredElements:Down() or Target.timeToDie <= 12) then
 			return LightningBolt
-		end
-		if ElementalSpirits.known and ChainLightning:Usable() and MaelstromWeapon.current >= 8 and CracklingThunder:Up() then
-			return ChainLightning
 		end
 		if ElementalBlast:Usable() and MaelstromWeapon.current >= 8 and (not ElementalSpirits.known or Pet.ElementalSpiritWolf:Count() >= 2) then
 			return ElementalBlast
@@ -3564,12 +3565,6 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 		if not ThorimsInvocation.known and LavaBurst:Usable() then
 			return LavaBurst
 		end
-		if LightningBolt:Usable() and (MaelstromWeapon.current >= 8 or StaticAccumulation.known) and PrimordialWave.buff:Down() then
-			return LightningBolt
-		end
-	end
-	if AlphaWolf.known and CrashLightning:Usable() and Pet.SpiritWolf:Up() and AlphaWolf:MinRemains() == 0 then
-		return CrashLightning
 	end
 	if self.use_cds and PrimordialWave:Usable() then
 		UseCooldown(PrimordialWave)
@@ -3581,7 +3576,13 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	) then
 		return Stormstrike
 	end
-	if FlameShock:Usable() and FlameShock:Down() then
+	if LightningBolt:Usable() and MaelstromWeapon.current >= (8 - (StaticAccumulation.known and 3 or 0)) and PrimordialWave.buff:Down() then
+		return LightningBolt
+	end
+	if AlphaWolf.known and CrashLightning:Usable() and Pet.SpiritWolf:Up() and AlphaWolf:MinRemains() == 0 then
+		return CrashLightning
+	end
+	if not Tempest.known and FlameShock:Usable() and FlameShock:Down() then
 		return FlameShock
 	end
 	if Windstrike:Usable() and (
@@ -3599,8 +3600,22 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if LivelyTotems.known and LavaLash:Usable() and (Player.time - LavaLash.last_used) >= 3.5 then
 		return LavaLash
 	end
+	if self.use_cds and ElementalSpirits.known and DoomWinds:Usable() then
+		UseCooldown(DoomWinds)
+	end
 	if ElementalAssault.known and SwirlingMaelstrom.known and IceStrike:Usable() then
 		return IceStrike
+	end
+	if Tempest.known then
+		if ElementalSpirits.known and MoltenAssault.known and LavaLash:Usable() and FlameShock:Up() then
+			return LavaLash
+		end
+		if Hailstorm.known and IceStrike.known and SwirlingMaelstrom.known and FrostShock:Usable() and Hailstorm:Up() then
+			return FrostShock
+		end
+	end
+	if FlameShock:Usable() and FlameShock:Down() then
+		return FlameShock
 	end
 	if LashingFlames.known and LavaLash:Usable() then
 		return LavaLash
@@ -3608,7 +3623,7 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if IceStrike:Usable() and IceStrike.buff:Down() then
 		return IceStrike
 	end
-	if FrostShock:Usable() and Hailstorm:Up() then
+	if Hailstorm.known and FrostShock:Usable() and Hailstorm:Up() then
 		return FrostShock
 	end
 	if ConvergingStorms.known and CrashLightning:Usable() then
@@ -3652,13 +3667,8 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if FlameShock:Usable() then
 		return FlameShock
 	end
-	if MaelstromWeapon.current >= 5 then
-		if ElementalSpirits.known and ChainLightning:Usable() and CracklingThunder:Up() then
-			return ChainLightning
-		end
-		if LightningBolt:Usable() and PrimordialWave.buff:Down() then
-			return LightningBolt
-		end
+	if LightningBolt:Usable() and MaelstromWeapon.current >= 5 and PrimordialWave.buff:Down() then
+		return LightningBolt
 	end
 end
 
