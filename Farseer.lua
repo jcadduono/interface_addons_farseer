@@ -1552,6 +1552,7 @@ Pet.LesserPrimalFireElemental = SummonedPet:Add(229799, 15, EchoOfTheElementals)
 Pet.LesserPrimalStormElemental = SummonedPet:Add(229798, 15, EchoOfTheElementals)
 Pet.SpiritWolf = SummonedPet:Add(29264, 15, FeralSpirit)
 Pet.ElementalSpiritWolf = SummonedPet:Add(100820, 15, ElementalSpirits)
+Pet.NatureSpiritWolf = SummonedPet:Add(212489, 15, RollingThunder)
 -- Totems
 Pet.CapacitorTotem = SummonedPet:Add(61245, 2, CapacitorTotem)
 Pet.HealingStreamTotem = SummonedPet:Add(3527, 15, HealingStreamTotem)
@@ -1988,7 +1989,7 @@ function Player:Update()
 		MaelstromWeapon.deficit = MaelstromWeapon.max - MaelstromWeapon.current
 	end
 	if FeralSpirit.known then
-		FeralSpirit.active = Pet.SpiritWolf:Count() + (ElementalSpirits.known and Pet.ElementalSpiritWolf:Count())
+		FeralSpirit.active = Pet.SpiritWolf:Count() + (ElementalSpirits.known and Pet.ElementalSpiritWolf:Count()) + (RollingThunder.known and Pet.NatureSpiritWolf:Count())
 	end
 	if CallOfTheAncestors.known then
 		CallOfTheAncestors.active = Pet.Ancestor:Count()
