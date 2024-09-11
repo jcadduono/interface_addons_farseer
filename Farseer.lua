@@ -1066,6 +1066,9 @@ local Skyfury = Ability:Add(462854, true, false)
 Skyfury.buff_duration = 3600
 Skyfury.mana_cost = 4
 ------ Talents
+local AncestralGuidance = Ability:Add(108281, true, true)
+AncestralGuidance.buff_duration = 10
+AncestralGuidance.cooldown_duration = 120
 local AstralShift = Ability:Add(108271, true, true)
 AstralShift.buff_duration = 12
 AstralShift.cooldown_duration = 120
@@ -2511,8 +2514,12 @@ end
 APL[SPEC.ELEMENTAL].Main = function(self)
 	self.cds_active = (AscendanceFlame.known and AscendanceFlame:Up()) or (FireElemental.known and FireElemental:Up()) or (StormElemental.known and StormElemental:Up())
 	self.use_cds = Opt.cooldown and (self.cds_active or Target.boss or Target.player or (not Opt.boss_only and Target.timeToDie > Opt.cd_ttd))
-	if Player.health.pct < Opt.heal and HealingSurge:Usable() and HealingSurge:Free() then
-		UseExtra(HealingSurge)
+	if Player.health.pct < Opt.heal then
+		if HealingSurge:Usable() and HealingSurge:Free() then
+			UseExtra(HealingSurge)
+		elseif HealingStreamTotem:Usable() and HealingStreamTotem:Down() then
+			UseExtra(HealingStreamTotem)
+		end
 	end
 	if Player:TimeInCombat() == 0 then
 --[[
@@ -2537,10 +2544,10 @@ actions.precombat+=/variable,name=spymaster_in_2nd,value=trinket.2.is.spymasters
 			UseCooldown(ThunderstrikeWard)
 		elseif Opt.shield and LightningShield:Usable() and LightningShield:Remains() < 300 then
 			UseCooldown(LightningShield)
-		elseif Opt.shield and ElementalOrbit.known and EarthShield:Usable() and (EarthShield:Remains() < 150 or EarthShield:Stack() <= 3) then
-			UseCooldown(EarthShield)
 		end
-		if Opt.earth and self.use_cds and EarthElemental:Usable() and not PrimalElementalist.known then
+		if Opt.shield and ElementalOrbit.known and EarthShield:Usable() and (EarthShield:Remains() < 150 or EarthShield:Stack() <= 3) then
+			UseExtra(EarthShield)
+		elseif Opt.earth and self.use_cds and EarthElemental:Usable() and not PrimalElementalist.known then
 			UseExtra(EarthElemental)
 		end
 		if self.use_cds and Stormkeeper:Usable() and Stormkeeper:Down() then
@@ -2557,6 +2564,10 @@ actions.precombat+=/variable,name=spymaster_in_2nd,value=trinket.2.is.spymasters
 			UseExtra(LightningShield)
 		elseif Opt.shield and ElementalOrbit.known and EarthShield:Usable() and EarthShield:Down() then
 			UseExtra(EarthShield)
+		elseif Player.health.pct < 90 and HealingStreamTotem:Usable() and Player:UnderAttack() and HealingStreamTotem:Down() then
+			UseExtra(HealingStreamTotem)
+		elseif self.use_cds and Player.health.pct < Opt.heal and AncestralGuidance:Usable() then
+			UseExtra(AncestralGuidance)
 		elseif Player.moving and SpiritwalkersGrace:Usable() then
 			UseExtra(SpiritwalkersGrace)
 		end
@@ -2957,8 +2968,12 @@ end
 APL[SPEC.ENHANCEMENT].Main = function(self)
 	self.cds_active = (AscendanceAir.known and AscendanceAir:Up()) or (FeralSpirit.known and FeralSpirit:Up()) or (DoomWinds.known and DoomWinds:Up())
 	self.use_cds = Opt.cooldown and (self.cds_active or Target.boss or Target.player or (not Opt.boss_only and Target.timeToDie > Opt.cd_ttd))
-	if Player.health.pct < Opt.heal and HealingSurge:Usable() and (MaelstromWeapon.current >= 5 or HealingSurge:Free()) then
-		UseExtra(HealingSurge)
+	if Player.health.pct < Opt.heal then
+		if HealingSurge:Usable() and (MaelstromWeapon.current >= 5 or HealingSurge:Free()) then
+			UseExtra(HealingSurge)
+		elseif HealingStreamTotem:Usable() and HealingStreamTotem:Down() then
+			UseExtra(HealingStreamTotem)
+		end
 	end
 	if Player:TimeInCombat() == 0 then
 --[[
@@ -2978,10 +2993,10 @@ actions.precombat+=/snapshot_stats
 			UseCooldown(FlametongueWeapon)
 		elseif Opt.shield and LightningShield:Usable() and LightningShield:Remains() < 300 then
 			UseCooldown(LightningShield)
-		elseif Opt.shield and ElementalOrbit.known and EarthShield:Usable() and (EarthShield:Remains() < 150 or EarthShield:Stack() <= 3) then
-			UseCooldown(EarthShield)
 		end
-		if Opt.earth and self.use_cds and EarthElemental:Usable() and not PrimalElementalist.known then
+		if Opt.shield and ElementalOrbit.known and EarthShield:Usable() and (EarthShield:Remains() < 150 or EarthShield:Stack() <= 3) then
+			UseExtra(EarthShield)
+		elseif Opt.earth and self.use_cds and EarthElemental:Usable() and not PrimalElementalist.known then
 			UseExtra(EarthElemental)
 		end
 	else
@@ -2995,6 +3010,10 @@ actions.precombat+=/snapshot_stats
 			UseExtra(LightningShield)
 		elseif Opt.shield and ElementalOrbit.known and EarthShield:Usable() and EarthShield:Down() then
 			UseExtra(EarthShield)
+		elseif Player.health.pct < 90 and HealingStreamTotem:Usable() and Player:UnderAttack() and HealingStreamTotem:Down() then
+			UseExtra(HealingStreamTotem)
+		elseif self.use_cds and Player.health.pct < Opt.heal and AncestralGuidance:Usable() then
+			UseExtra(AncestralGuidance)
 		end
 	end
 --[[
