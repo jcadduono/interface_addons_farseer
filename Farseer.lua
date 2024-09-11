@@ -1175,13 +1175,13 @@ SurgingTotem.summon_count = 1
 local Tempest = Ability:Add(452201, false, true)
 Tempest.learn_spellId = 454009
 Tempest.mana_cost = 0.2
-Tempest.max_stack = 2
 Tempest.maelstrom_spent = 0
 Tempest.consume_mw = true
 Tempest.requires_react = true
 Tempest:AutoAoe(false)
 Tempest.buff = Ability:Add(454015, true, true)
 Tempest.buff.buff_duration = 30
+Tempest.buff.max_stack = 2
 local TotemicRebound = Ability:Add(445025, true, true, 458269)
 TotemicRebound.buff_duration = 25
 TotemicRebound.max_stack = 10
@@ -3078,12 +3078,12 @@ end
 
 APL[SPEC.ENHANCEMENT].aoe = function(self)
 --[[
-actions.aoe=tempest,target_if=min:debuff.lightning_rod.remains,if=buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack|(buff.maelstrom_weapon.stack>=5&(tempest_mael_count>30|buff.awakening_storms.stack=2))
+actions.aoe=tempest,target_if=min:debuff.lightning_rod.remains,if=buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack|(buff.maelstrom_weapon.stack>=5&buff.tempest.stack=buff.tempest.max_stack&(tempest_mael_count>30|buff.awakening_storms.stack=2))
 actions.aoe+=/windstrike,target_if=min:debuff.lightning_rod.remains,if=talent.thorims_invocation.enabled&buff.maelstrom_weapon.stack>1&ti_chain_lightning
 actions.aoe+=/crash_lightning,if=talent.crashing_storms.enabled&((talent.unruly_winds.enabled&active_enemies>=10)|active_enemies>=15)
 actions.aoe+=/lightning_bolt,target_if=min:debuff.lightning_rod.remains,if=(!talent.tempest.enabled|(tempest_mael_count<=10&buff.awakening_storms.stack<=1))&((active_dot.flame_shock=active_enemies|active_dot.flame_shock=6)&buff.primordial_wave.up&buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack&(!buff.splintered_elements.up|fight_remains<=12|raid_event.adds.remains<=gcd))
 actions.aoe+=/lava_lash,if=talent.molten_assault.enabled&(talent.primordial_wave.enabled|talent.fire_nova.enabled)&dot.flame_shock.ticking&(active_dot.flame_shock<active_enemies)&active_dot.flame_shock<6
-actions.aoe+=/primordial_wave,target_if=min:dot.flame_shock.remains,if=!buff.primordial_wave.up
+actions.aoe+=/primordial_wave,target_if=min:dot.flame_shock.remains,if=!buff.primordial_wave.up&(!talent.tempest.enabled|buff.tempest.up|tempest_mael_count>30|buff.awakening_storms.stack>=2)
 actions.aoe+=/chain_lightning,target_if=min:debuff.lightning_rod.remains,if=buff.arc_discharge.up&buff.maelstrom_weapon.stack>=5
 actions.aoe+=/elemental_blast,target_if=min:debuff.lightning_rod.remains,if=(!talent.elemental_spirits.enabled|(talent.elemental_spirits.enabled&(charges=max_charges|feral_spirit.active>=2)))&buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack&(!talent.crashing_storms.enabled|active_enemies<=3)
 actions.aoe+=/chain_lightning,target_if=min:debuff.lightning_rod.remains,if=buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack
@@ -3108,6 +3108,7 @@ actions.aoe+=/ice_strike
 actions.aoe+=/lava_lash
 actions.aoe+=/crash_lightning
 actions.aoe+=/fire_nova,if=active_dot.flame_shock>=2
+actions.aoe+=/primordial_wave,target_if=min:dot.flame_shock.remains,if=!buff.primordial_wave.up
 actions.aoe+=/elemental_blast,target_if=min:debuff.lightning_rod.remains,if=(!talent.elemental_spirits.enabled|(talent.elemental_spirits.enabled&(charges=max_charges|feral_spirit.active>=2)))&buff.maelstrom_weapon.stack>=5&(!talent.crashing_storms.enabled|active_enemies<=3)
 actions.aoe+=/chain_lightning,target_if=min:debuff.lightning_rod.remains,if=buff.maelstrom_weapon.stack>=5
 actions.aoe+=/flame_shock,if=!ticking
@@ -3116,10 +3117,9 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 	if Tempest:Usable() and (
 		MaelstromWeapon.deficit == 0 or
 		(MaelstromWeapon.current >= 5 and (
-			Tempest:Maelstrom() > 30 or
-			AwakeningStorms.buff:Stack() >= 2 or
 			Tempest.buff:Remains() < (Player.gcd * 3) or
-			(PrimordialWave.known and PrimordialWave.buff:Up() and PrimordialWave.buff:Remains() < (Player.gcd * 2))
+			(PrimordialWave.known and PrimordialWave.buff:Up() and PrimordialWave.buff:Remains() < (Player.gcd * 2)) or
+			(Tempest.buff:Stack() >= Tempest.buff:MaxStack() and (Tempest:Maelstrom() > 30 or AwakeningStorms.buff:Stack() >= 2))
 		))
 	) then
 		return Tempest
@@ -3142,7 +3142,12 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 	if MoltenAssault.known and LavaLash:Usable() and (PrimordialWave.known or FireNova.known) and FlameShock:Up() and not FlameShock:Max() then
 		return LavaLash
 	end
-	if self.use_cds and PrimordialWave:Usable() and PrimordialWave.buff:Down() then
+	if self.use_cds and PrimordialWave:Usable() and PrimordialWave.buff:Down() and (
+		not Tempest.known or
+		Tempest.buff:Up() or
+		Tempest:Maelstrom() > 30 or
+		AwakeningStorms.buff:Stack() >= 2
+	) then
 		UseCooldown(PrimordialWave)
 	end
 	if ArcDischarge.known and ChainLightning:Usable() and MaelstromWeapon.current >= 5 and not self.pool_primordial_mw and ArcDischarge:Up() then
@@ -3238,6 +3243,9 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 	if FireNova:Usable() and FlameShock:Ticking() >= 2 then
 		return FireNova
 	end
+	if self.use_cds and PrimordialWave:Usable() and PrimordialWave.buff:Down() then
+		UseCooldown(PrimordialWave)
+	end
 	if MaelstromWeapon.current >= 5 and not self.pool_primordial_mw then
 		if ElementalBlast:Usable() and (not CrashingStorms.known or Player.enemies <= 3) and (
 			not ElementalSpirits.known or
@@ -3262,7 +3270,7 @@ APL[SPEC.ENHANCEMENT].funnel = function(self)
 --[[
 actions.funnel=ascendance
 actions.funnel+=/windstrike,if=(talent.thorims_invocation.enabled&buff.maelstrom_weapon.stack>1)|buff.converging_storms.stack=buff.converging_storms.max_stack
-actions.funnel+=/tempest,if=buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack|(buff.maelstrom_weapon.stack>=5&(tempest_mael_count>30|buff.awakening_storms.stack=2))
+actions.funnel+=/tempest,if=buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack|(buff.maelstrom_weapon.stack>=5&buff.tempest.stack=buff.tempest.max_stack&(tempest_mael_count>30|buff.awakening_storms.stack=2))
 actions.funnel+=/lightning_bolt,if=(active_dot.flame_shock=active_enemies|active_dot.flame_shock=6)&buff.primordial_wave.up&buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack&(!buff.splintered_elements.up|fight_remains<=12|raid_event.adds.remains<=gcd)
 actions.funnel+=/elemental_blast,if=buff.maelstrom_weapon.stack>=5&talent.elemental_spirits.enabled&feral_spirit.active>=4
 actions.funnel+=/lightning_bolt,if=talent.supercharge.enabled&buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack&(variable.expected_lb_funnel>variable.expected_cl_funnel)
@@ -3312,10 +3320,9 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 	if Tempest:Usable() and (
 		MaelstromWeapon.deficit == 0 or
 		(MaelstromWeapon.current >= 5 and (
-			Tempest:Maelstrom() > 30 or
-			AwakeningStorms.buff:Stack() >= 2 or
 			Tempest.buff:Remains() < (Player.gcd * 3) or
-			(PrimordialWave.known and PrimordialWave.buff:Up() and PrimordialWave.buff:Remains() < (Player.gcd * 2))
+			(PrimordialWave.known and PrimordialWave.buff:Up() and PrimordialWave.buff:Remains() < (Player.gcd * 2)) or
+			(Tempest.buff:Stack() >= Tempest.buff:MaxStack() and (Tempest:Maelstrom() > 30 or AwakeningStorms.buff:Stack() >= 2))
 		))
 	) then
 		return Tempest
@@ -3532,7 +3539,7 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 		UseCooldown(FeralSpirit)
 	end
 	if MaelstromWeapon.current >= 5 then
-		if Tempest:Usable() and ((MaelstromWeapon.deficit == 0 and Tempest:Stack() >= Tempest:MaxStack()) or Tempest.buff:Remains() < (Player.gcd * 3)) then
+		if Tempest:Usable() and ((MaelstromWeapon.deficit == 0 and Tempest.buff:Stack() >= Tempest.buff:MaxStack()) or Tempest.buff:Remains() < (Player.gcd * 3)) then
 			return Tempest
 		end
 		if ElementalSpirits.known and ElementalBlast:Usable() and FeralSpirit.active >= 2 and FeralSpirit:Remains() <= (Player.gcd * 2) then
