@@ -1024,7 +1024,7 @@ Note: To get talent_node value for a talent, hover over talent and use macro:
 
 -- Shaman Abilities
 ---- Multiple Specializations
-local FlameShock = Ability:Add(188389, false, true)
+local FlameShock = Ability:Add(470411, false, true, 188389)
 FlameShock.buff_duration = 18
 FlameShock.cooldown_duration = 6
 FlameShock.mana_cost = 0.3
@@ -1357,6 +1357,9 @@ Sundering:AutoAoe(false)
 local SwirlingMaelstrom = Ability:Add(384359, false, true)
 local ThorimsInvocation = Ability:Add(384444, true, true)
 local UnrulyWinds = Ability:Add(390288, false, true)
+local VoltaicBlaze = Ability:Add(470057, true, true, 470058)
+VoltaicBlaze.buff_duration = 20
+VoltaicBlaze.learn_spellId = 470053
 local WindfuryWeapon = Ability:Add(33757, true, true)
 WindfuryWeapon.enchant_id = 5401
 local Windstrike = Ability:Add(115356, false, true) -- Replaces Stormstrike during AscendanceAir
@@ -1375,8 +1378,8 @@ local IcyEdge = Ability:Add(224126, true, true) -- Granted by Elemental Spirits
 IcyEdge.buff_duration = 15
 local MoltenWeapon = Ability:Add(224125, true, true) -- Granted by Elemental Spirits
 MoltenWeapon.buff_duration = 15
-local Stormbringer = Ability:Add(201845, true, true, 201846)
-Stormbringer.buff_duration = 12
+local Stormsurge = Ability:Add(201845, true, true, 201846)
+Stormsurge.buff_duration = 12
 ---- Restoration
 
 ------ Talents
@@ -1992,7 +1995,7 @@ function Player:Update()
 		MaelstromWeapon.deficit = MaelstromWeapon.max - MaelstromWeapon.current
 	end
 	if FeralSpirit.known then
-		FeralSpirit.active = Pet.SpiritWolf:Count() + (ElementalSpirits.known and Pet.ElementalSpiritWolf:Count()) + (RollingThunder.known and Pet.NatureSpiritWolf:Count())
+		FeralSpirit.active = Pet.SpiritWolf:Count() + (ElementalSpirits.known and Pet.ElementalSpiritWolf:Count() or 0) + (RollingThunder.known and Pet.NatureSpiritWolf:Count() or 0)
 	end
 	if CallOfTheAncestors.known then
 		CallOfTheAncestors.active = Pet.Ancestor:Count()
@@ -2471,6 +2474,20 @@ function PrimordialWave.buff:Remains()
 		return 0
 	end
 	return Ability.Remains(self)
+end
+
+function FlameShock:Usable(...)
+	if VoltaicBlaze.known and VoltaicBlaze:Up() then
+		return false
+	end
+	return Ability.Usable(self, ...)
+end
+
+function VoltaicBlaze:Usable(...)
+	if not VoltaicBlaze.known or VoltaicBlaze:Down() then
+		return false
+	end
+	return Ability.Usable(self, ...)
 end
 
 -- End Ability Modifications
@@ -3158,6 +3175,9 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 	) then
 		return LightningBolt
 	end
+	if VoltaicBlaze:Usable() and not FlameShock:Max() then
+		return VoltaicBlaze
+	end
 	if MoltenAssault.known and LavaLash:Usable() and (PrimordialWave.known or FireNova.known) and FlameShock:Up() and not FlameShock:Max() then
 		return LavaLash
 	end
@@ -3211,6 +3231,9 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 		(LashingFlames.known and LashingFlames:Remains() < 2)
 	) then
 		return LavaLash
+	end
+	if VoltaicBlaze:Usable() then
+		return VoltaicBlaze
 	end
 	if Hailstorm.known then
 		if IceStrike:Usable() and IceStrike.buff:Down() then
@@ -3423,6 +3446,9 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 	if FireNova:Usable() and FlameShock:Ticking() >= clamp(Player.enemies, 4, 6) then
 		return FireNova
 	end
+	if VoltaicBlaze:Usable() then
+		return VoltaicBlaze
+	end
 	if Hailstorm.known then
 		if IceStrike:Usable() and IceStrike.buff:Down() then
 			return IceStrike
@@ -3584,6 +3610,9 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 		if self.use_cds and PrimordialWave:Usable() then
 			UseCooldown(PrimordialWave)
 		end
+		if VoltaicBlaze:Usable() then
+			return VoltaicBlaze
+		end
 		if FlameShock:Usable() then
 			return FlameShock
 		end
@@ -3608,7 +3637,7 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if not ElementalSpirits.known and Stormstrike:Usable() and (
 		DeeplyRootedElements.known or
 		(DoomWinds.known and DoomWinds:Up()) or
-		(Stormblast.known and Stormbringer:Up())
+		(Stormblast.known and Stormsurge:Up())
 	) then
 		return Stormstrike
 	end
@@ -3635,7 +3664,7 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if ElementalSpirits.known and Stormstrike:Usable() and (
 		DeeplyRootedElements.known or
 		(DoomWinds.known and DoomWinds:Up()) or
-		(Stormblast.known and Stormbringer:Up())
+		(Stormblast.known and Stormsurge:Up())
 	) then
 		return Stormstrike
 	end
@@ -3644,6 +3673,9 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	end
 	if AlphaWolf.known and CrashLightning:Usable() and FeralSpirit.active > 0 and AlphaWolf:MinRemains() == 0 then
 		return CrashLightning
+	end
+	if VoltaicBlaze:Usable() and FlameShock:Down() then
+		return VoltaicBlaze
 	end
 	if not Tempest.known and FlameShock:Usable() and FlameShock:Down() then
 		return FlameShock
@@ -4000,7 +4032,7 @@ function UI:Disappear()
 	Player.cd = nil
 	Player.interrupt = nil
 	Player.extra = nil
-	UI:UpdateGlows()
+	self:UpdateGlows()
 end
 
 function UI:Reset()
@@ -4468,6 +4500,7 @@ function Events:PLAYER_EQUIPMENT_CHANGED()
 
 	Player.set_bonus.t33 = (Player:Equipped(212009) and 1 or 0) + (Player:Equipped(212010) and 1 or 0) + (Player:Equipped(212011) and 1 or 0) + (Player:Equipped(212012) and 1 or 0) + (Player:Equipped(212014) and 1 or 0)
 
+	Player:ResetSwing(true, true)
 	Player:UpdateKnown()
 end
 
