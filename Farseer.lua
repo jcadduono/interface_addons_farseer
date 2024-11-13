@@ -3718,6 +3718,9 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if AlphaWolf.known and CrashLightning:Usable() and FeralSpirit.active > 0 and AlphaWolf:MinRemains() == 0 then
 		return CrashLightning
 	end
+	if Hailstorm.known and SwirlingMaelstrom.known and FrostShock:Usable() and Hailstorm:Stack() >= 10 and IceStrike.buff:Up() and IceStrike.buff:Remains() < 3 then
+		return FrostShock
+	end
 	if VoltaicBlaze:Usable() and FlameShock:Down() then
 		return VoltaicBlaze
 	end
@@ -3748,6 +3751,9 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if ElementalAssault.known and SwirlingMaelstrom.known and IceStrikeProc:Usable() then
 		return IceStrikeProc
 	end
+	if Hailstorm.known and SwirlingMaelstrom.known and FrostShock:Usable() and Hailstorm:Stack() >= 10 and IceStrike.buff:Up() then
+		return FrostShock
+	end
 	if Tempest.known then
 		if ElementalSpirits.known and MoltenAssault.known and LavaLash:Usable() and FlameShock:Up() then
 			return LavaLash
@@ -3767,6 +3773,9 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	end
 	if IceStrikeProc:Usable() and IceStrike.buff:Down() then
 		return IceStrikeProc
+	end
+	if VoltaicBlaze:Usable() then
+		return VoltaicBlaze
 	end
 	if Hailstorm.known and FrostShock:Usable() and Hailstorm:Up() then
 		return FrostShock
