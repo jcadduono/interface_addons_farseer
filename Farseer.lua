@@ -1054,12 +1054,19 @@ HealingStreamTotem.summon_count = 1
 local HealingSurge = Ability:Add(8004, true, true)
 HealingSurge.mana_cost = 10
 HealingSurge.consume_mw = true
-local IceStrike = Ability:Add(342240, false, true)
+local IceStrike = Ability:Add(470194, false, true)
 IceStrike.buff_duration = 6
+IceStrike.mana_cost = 0.66
 IceStrike.cooldown_duration = 15
 IceStrike.hasted_cooldown = true
 IceStrike.buff = Ability:Add(384357, true, true)
 IceStrike.buff.buff_duration = 12
+local IceStrikeProc = Ability:Add(342240, false, true)
+IceStrikeProc.buff_duration = 6
+IceStrikeProc.mana_cost = 0.66
+IceStrikeProc.learn_spellId = 466467
+IceStrikeProc.buff = Ability:Add(466469, true, true)
+IceStrikeProc.buff.buff_duration = 12
 local LightningBolt = Ability:Add(188196, false, true)
 LightningBolt.mana_cost = 0.2
 LightningBolt.maelstrom_gain = 6
@@ -1827,7 +1834,8 @@ function Player:UpdateKnown()
 
 	AwakeningStorms.buff.known = AwakeningStorms.known
 	CrashLightning.buff.known = CrashLightning.known
-	IceStrike.buff.known = IceStrike.known
+	IceStrike.buff.known = IceStrike.known or IceStrikeProc.known
+	IceStrikeProc.buff.kown = IceStrikeProc.known
 	Windstrike.known = AscendanceAir.known or DeeplyRootedElements.known
 	LavaBeam.known = AscendanceFlame.known or DeeplyRootedElements.known
 	PrimordialWave.buff.known = PrimordialWave.known
@@ -2499,11 +2507,19 @@ function FlameShock:Usable(...)
 	return Ability.Usable(self, ...)
 end
 
-function VoltaicBlaze:Usable(...)
-	if not VoltaicBlaze.known or VoltaicBlaze:Down() then
+function FrostShock:Usable(...)
+	if IceStrikeProc.known and IceStrikeProc.buff:Up() then
 		return false
 	end
 	return Ability.Usable(self, ...)
+end
+
+function IceStrikeProc:Usable(...)
+	return self.known and self.buff:Up() and Ability.Usable(self, ...)
+end
+
+function VoltaicBlaze:Usable(...)
+	return self.known and self:Up() and Ability.Usable(self, ...)
 end
 
 -- End Ability Modifications
@@ -3255,6 +3271,9 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 		if IceStrike:Usable() and IceStrike.buff:Down() then
 			return IceStrike
 		end
+		if IceStrikeProc:Usable() and IceStrike.buff:Down() then
+			return IceStrikeProc
+		end
 		if FrostShock:Usable() and (Hailstorm:Stack() >= 8 or IceStrike.buff:Up()) then
 			return FrostShock
 		end
@@ -3291,6 +3310,9 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 	end
 	if IceStrike:Usable() then
 		return IceStrike
+	end
+	if IceStrikeProc:Usable() then
+		return IceStrikeProc
 	end
 	if LavaLash:Usable() then
 		return LavaLash
@@ -3469,6 +3491,9 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 		if IceStrike:Usable() and IceStrike.buff:Down() then
 			return IceStrike
 		end
+		if IceStrikeProc:Usable() and IceStrike.buff:Down() then
+			return IceStrikeProc
+		end
 		if FrostShock:Usable() and (Hailstorm:Stack() >= 8 or IceStrike.buff:Up()) then
 			return FrostShock
 		end
@@ -3502,6 +3527,9 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 	end
 	if IceStrike:Usable() then
 		return IceStrike
+	end
+	if IceStrikeProc:Usable() then
+		return IceStrikeProc
 	end
 	if LavaLash:Usable() then
 		return LavaLash
@@ -3717,6 +3745,9 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if ElementalAssault.known and SwirlingMaelstrom.known and IceStrike:Usable() then
 		return IceStrike
 	end
+	if ElementalAssault.known and SwirlingMaelstrom.known and IceStrikeProc:Usable() then
+		return IceStrikeProc
+	end
 	if Tempest.known then
 		if ElementalSpirits.known and MoltenAssault.known and LavaLash:Usable() and FlameShock:Up() then
 			return LavaLash
@@ -3734,6 +3765,9 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if IceStrike:Usable() and IceStrike.buff:Down() then
 		return IceStrike
 	end
+	if IceStrikeProc:Usable() and IceStrike.buff:Down() then
+		return IceStrikeProc
+	end
 	if Hailstorm.known and FrostShock:Usable() and Hailstorm:Up() then
 		return FrostShock
 	end
@@ -3745,6 +3779,9 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	end
 	if IceStrike:Usable() then
 		return IceStrike
+	end
+	if IceStrikeProc:Usable() then
+		return IceStrikeProc
 	end
 	if Windstrike:Usable() then
 		return Windstrike
