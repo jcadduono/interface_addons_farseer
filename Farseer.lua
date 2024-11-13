@@ -766,6 +766,13 @@ function Ability:MaelstromGain()
 	return self.maelstrom_gain
 end
 
+function Ability:Free()
+	return (
+		(self.mana_cost > 0 and self:ManaCost() == 0) or
+		(Player.spec == SPEC.ELEMENTAL and self.maelstrom_cost > 0 and self:MaelstromCost() == 0)
+	)
+end
+
 function Ability:ChargesFractional()
 	local info = GetSpellCharges(self.spellId)
 	if not info then
@@ -1318,6 +1325,7 @@ FeralSpirit.buff_duration = 15
 FeralSpirit.cooldown_duration = 180
 FeralSpirit.summon_count = 2
 FeralSpirit.active = 0
+local FlowingSpirits = Ability:Add(469314, false, true)
 local FireNova = Ability:Add(333974, false, true, 333977)
 FireNova.mana_cost = 0.2
 FireNova.cooldown_duration = 15
@@ -1868,6 +1876,14 @@ function Player:UpdateKnown()
 	if AncestralSwiftness.known then
 		NaturesSwiftness.known = false
 	end
+	if FlowingSpirits.known then
+		FeralSpirit.known = false
+		Pet.SpiritWolf.duration = 8
+		Pet.SpiritWolf.summon_spell = FlowingSpirits
+	else
+		Pet.SpiritWolf.duration = 15
+		Pet.SpiritWolf.summon_spell = FeralSpirit
+	end
 
 	Abilities:Update()
 	SummonedPets:Update()
@@ -1994,7 +2010,7 @@ function Player:Update()
 		end
 		MaelstromWeapon.deficit = MaelstromWeapon.max - MaelstromWeapon.current
 	end
-	if FeralSpirit.known then
+	if Pet.SpiritWolf.known then
 		FeralSpirit.active = Pet.SpiritWolf:Count() + (ElementalSpirits.known and Pet.ElementalSpiritWolf:Count() or 0) + (RollingThunder.known and Pet.NatureSpiritWolf:Count() or 0)
 	end
 	if CallOfTheAncestors.known then
@@ -4100,7 +4116,7 @@ function UI:UpdateDisplay()
 	if MaelstromWeapon.known and MaelstromWeapon.current > 0 then
 		text_tl = MaelstromWeapon.current
 	end
-	if FeralSpirit.known and FeralSpirit.active > 0 then
+	if Pet.SpiritWolf.known and FeralSpirit.active > 0 then
 		text_tr = FeralSpirit.active
 	elseif CallOfTheAncestors.known and CallOfTheAncestors.active > 0 then
 		text_tr = CallOfTheAncestors.active
@@ -4128,7 +4144,7 @@ function UI:UpdateCombat()
 
 	if Player.main then
 		farseerPanel.icon:SetTexture(Player.main.icon)
-		Player.main_freecast = (Player.main.mana_cost > 0 and Player.main:ManaCost() == 0) or (Player.spec == SPEC.ELEMENTAL and Player.main.maelstrom_cost > 0 and Player.main:MaelstromCost() == 0) or (Player.main.Free and Player.main.Free())
+		Player.main_freecast = Player.main:Free()
 	end
 	if Player.cd then
 		farseerCooldownPanel.icon:SetTexture(Player.cd.icon)
