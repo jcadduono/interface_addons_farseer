@@ -1249,9 +1249,6 @@ FusionOfElements.nature = Ability:Add(462841, true, true)
 FusionOfElements.nature.buff_duration = 20
 local ImprovedFlametongueWeapon = Ability:Add(382027, true, true, 382028)
 ImprovedFlametongueWeapon.buff_duration = 3600
-local LavaBeam = Ability:Add(114074, false, true) -- Replaces Lava Burst during AscendanceFlame
-LavaBeam.triggers_combat = true
-LavaBeam:AutoAoe(false)
 local LightningRod = Ability:Add(210689, true, true, 197209)
 LightningRod.buff_duration = 8
 LightningRod.value = 0.20
@@ -1837,7 +1834,6 @@ function Player:UpdateKnown()
 	IceStrike.buff.known = IceStrike.known or IceStrikeProc.known
 	IceStrikeProc.buff.kown = IceStrikeProc.known
 	Windstrike.known = AscendanceAir.known or DeeplyRootedElements.known
-	LavaBeam.known = AscendanceFlame.known or DeeplyRootedElements.known
 	PrimordialWave.buff.known = PrimordialWave.known
 	Tempest.buff.known = Tempest.known
 	if FrostShock.known then
@@ -2260,10 +2256,6 @@ function LightningBolt:Damage()
 	return 1000 -- TODO: Calculate actual damage
 end
 
-function ChainLightning:Usable()
-	return AscendanceFlame:Down() and Ability.Usable(self)
-end
-
 function ChainLightning:Free()
 	return (
 		Stormkeeper:Up() or
@@ -2291,20 +2283,6 @@ function ElementalBlast:Free()
 		(AncestralSwiftness.known and AncestralSwiftness:Up())
 	)
 end
-
-function LavaBeam:Usable()
-	return AscendanceFlame:Up() and Ability.Usable(self)
-end
-
-function LavaBeam:Free()
-	return Stormkeeper:Up() or (ArcDischarge.known and ArcDischarge:Up())
-end
-
-function LavaBeam:Targets()
-	return min(Player.enemies, 5 + (SurgeOfPower.known and SurgeOfPower:Up() and 1 or 0))
-end
-
-LavaBeam.MaelstromGain = ChainLightning.MaelstromGain
 
 function LavaBurst:Free()
 	return (
@@ -2741,9 +2719,6 @@ actions.aoe+=/frost_shock,moving=1
 		UseCooldown(AscendanceFlame)
 	end
 	if SurgeOfPower.known and Player.enemies >= 6 then
-		if LavaBeam:Usable() and SurgeOfPower:Up() and AscendanceFlame:Remains() > LavaBeam:CastTime() then
-			return LavaBeam
-		end
 		if ChainLightning:Usable() and SurgeOfPower:Up() then
 			return ChainLightning
 		end
@@ -2779,26 +2754,14 @@ actions.aoe+=/frost_shock,moving=1
 	if MasterOfTheElements.known and FireElemental.known and LavaBurst:Usable() and MasterOfTheElements:Down() and AscendanceFlame:Down() then
 		return LavaBurst
 	end
-	if LavaBeam:Usable() and Stormkeeper:Up() and (Player.enemies < 6 or SurgeOfPower:Up()) then
-		return LavaBeam
-	end
 	if ChainLightning:Usable() and Stormkeeper:Up() and (Player.enemies < 6 or SurgeOfPower:Up()) then
 		return ChainLightning
-	end
-	if LavaBeam:Usable() and Stormkeeper:Down() and PowerOfTheMaelstrom:Up() and AscendanceFlame:Remains() > LavaBeam:CastTime() then
-		return LavaBeam
 	end
 	if ChainLightning:Usable() and Stormkeeper:Down() and PowerOfTheMaelstrom:Up() then
 		return ChainLightning
 	end
-	if LavaBeam:Usable() and Stormkeeper:Down() and Player.enemies >= (MasterOfTheElements:Up() and 4 or 5) and AscendanceFlame:Remains() > LavaBeam:CastTime() then
-		return LavaBeam
-	end
 	if DeeplyRootedElements.known and LavaBurst:Usable() then
 		return LavaBurst
-	end
-	if LavaBeam:Usable() and AscendanceFlame:Remains() > LavaBeam:CastTime() then
-		return LavaBeam
 	end
 	if ChainLightning:Usable() then
 		return ChainLightning
