@@ -23,6 +23,8 @@ end
 local min = math.min
 local max = math.max
 local floor = math.floor
+local GetActionInfo = _G.GetActionInfo
+local GetBindingKey = _G.GetBindingKey
 local GetTotemInfo = _G.GetTotemInfo
 local GetWeaponEnchantInfo = _G.GetWeaponEnchantInfo
 local GetPowerRegenForPowerType = _G.GetPowerRegenForPowerType
@@ -126,6 +128,7 @@ local function InitOpts()
 		always_on = false,
 		cooldown = true,
 		spell_swipe = true,
+		keybinds = true,
 		dimmer = true,
 		miss_effect = true,
 		boss_only = false,
@@ -146,7 +149,8 @@ end
 -- UI related functions container
 local UI = {
 	anchor = {},
-	glows = {},
+	buttons = {},
+	action_slots = {},
 }
 
 -- combat event related functions container
@@ -214,6 +218,7 @@ local APL = {
 
 -- current player information
 local Player = {
+	initialized = false,
 	time = 0,
 	time_diff = 0,
 	ctime = 0,
@@ -315,7 +320,7 @@ Player.BaseMana = {
 	656630,  771290,  905970,  1064170, 2500000, -- 80
 }
 
--- current pet information (used only to store summoned pets for priests)
+-- current pet information (used only to store summoned pets for shamans)
 local Pet = {}
 
 -- current target information
@@ -529,6 +534,7 @@ function Ability:Add(spellId, buff, player, spellId2)
 		last_used = 0,
 		aura_target = buff and 'player' or 'target',
 		aura_filter = (buff and 'HELPFUL' or 'HARMFUL') .. (player and '|PLAYER' or ''),
+		keybinds = {},
 	}
 	setmetatable(ability, self)
 	Abilities.all[#Abilities.all + 1] = ability
@@ -752,6 +758,10 @@ end
 
 function Ability:MaxStack()
 	return self.max_stack
+end
+
+function Ability:Capped(deficit)
+	return self:Stack() >= (self:MaxStack() - (deficit or 0))
 end
 
 function Ability:ManaCost()
@@ -1030,7 +1040,8 @@ Note: To get talent_node value for a talent, hover over talent and use macro:
 ]]
 
 -- Shaman Abilities
----- Multiple Specializations
+---- Class
+------ Baseline
 local FlameShock = Ability:Add(470411, false, true, 188389)
 FlameShock.buff_duration = 18
 FlameShock.cooldown_duration = 6
@@ -1162,46 +1173,6 @@ TotemicRecall.cooldown_duration = 180
 local WindShear = Ability:Add(57994, false, true)
 WindShear.buff_duration = 2
 WindShear.cooldown_duration = 12
--- Hero Talents
-local AncestralSwiftness = Ability:Add(443454, true, true)
-AncestralSwiftness.buff_duration = 3600
-AncestralSwiftness.learn_spellId = 448861
-AncestralSwiftness.cooldown_duration = 30
-local ArcDischarge = Ability:Add(455096, true, true, 455097) -- Granted by Tempest
-ArcDischarge.buff_duration = 15
-local AwakeningStorms = Ability:Add(455129, false, true, 455130)
-AwakeningStorms.buff = Ability:Add(462131, true, true)
-AwakeningStorms.buff.buff_duration = 3600
-AwakeningStorms.buff.max_stack = 3
-local CallOfTheAncestors = Ability:Add(443450, true, true)
-CallOfTheAncestors.active = 0
-local Earthsurge = Ability:Add(455590, false, true)
-local ElementalReverb = Ability:Add(443418, false, true)
-local HeedMyCall = Ability:Add(443444, false, true)
-local LivelyTotems = Ability:Add(445034, true, true, 458101)
-LivelyTotems.buff_duration = 8
-local RollingThunder = Ability:Add(454026, true, true)
-local Supercharge = Ability:Add(455110, false, true)
-local SurgingCurrents = Ability:Add(454372, true, true, 454376)
-SurgingCurrents.buff_duration = 15
-local SurgingTotem = Ability:Add(444995, false, true)
-SurgingTotem.buff_duration = 24
-SurgingTotem.cooldown_duration = 30
-SurgingTotem.mana_cost = 0.4
-SurgingTotem.summon_count = 1
-local Tempest = Ability:Add(452201, false, true)
-Tempest.learn_spellId = 454009
-Tempest.mana_cost = 0.2
-Tempest.maelstrom_spent = 0
-Tempest.consume_mw = true
-Tempest.requires_react = true
-Tempest:AutoAoe(false)
-Tempest.buff = Ability:Add(454015, true, true)
-Tempest.buff.buff_duration = 30
-Tempest.buff.max_stack = 2
-local TotemicRebound = Ability:Add(445025, true, true, 458269)
-TotemicRebound.buff_duration = 25
-TotemicRebound.max_stack = 10
 ------ Procs
 local LavaSurge = Ability:Add(77756, true, true, 77762)
 LavaSurge.buff_duration = 10
@@ -1400,6 +1371,49 @@ Stormsurge.buff_duration = 12
 
 -- Aliases
 local Stormkeeper = StormkeeperEle
+-- Hero Talents
+---- Farseer
+local AncestralSwiftness = Ability:Add(443454, true, true)
+AncestralSwiftness.buff_duration = 3600
+AncestralSwiftness.learn_spellId = 448861
+AncestralSwiftness.cooldown_duration = 30
+local CallOfTheAncestors = Ability:Add(443450, true, true)
+CallOfTheAncestors.active = 0
+local ElementalReverb = Ability:Add(443418, false, true)
+local HeedMyCall = Ability:Add(443444, false, true)
+---- Stormbringer
+local ArcDischarge = Ability:Add(455096, true, true, 455097) -- Granted by Tempest
+ArcDischarge.buff_duration = 15
+local AwakeningStorms = Ability:Add(455129, false, true, 455130)
+AwakeningStorms.buff = Ability:Add(462131, true, true)
+AwakeningStorms.buff.buff_duration = 3600
+AwakeningStorms.buff.max_stack = 3
+local RollingThunder = Ability:Add(454026, true, true)
+local Supercharge = Ability:Add(455110, false, true)
+local SurgingCurrents = Ability:Add(454372, true, true, 454376)
+SurgingCurrents.buff_duration = 15
+local Tempest = Ability:Add(452201, false, true)
+Tempest.learn_spellId = 454009
+Tempest.mana_cost = 0.2
+Tempest.maelstrom_spent = 0
+Tempest.consume_mw = true
+Tempest.requires_react = true
+Tempest:AutoAoe(false)
+Tempest.buff = Ability:Add(454015, true, true)
+Tempest.buff.buff_duration = 30
+Tempest.buff.max_stack = 2
+---- Totemic
+local Earthsurge = Ability:Add(455590, false, true)
+local LivelyTotems = Ability:Add(445034, true, true, 458101)
+LivelyTotems.buff_duration = 8
+local SurgingTotem = Ability:Add(444995, false, true)
+SurgingTotem.buff_duration = 24
+SurgingTotem.cooldown_duration = 30
+SurgingTotem.mana_cost = 0.4
+SurgingTotem.summon_count = 1
+local TotemicRebound = Ability:Add(445025, true, true, 458269)
+TotemicRebound.buff_duration = 25
+TotemicRebound.max_stack = 10
 -- Tier set bonuses
 local MaelstromSurge = Ability:Add(457727, true, true) -- T33 4pc (Elemental)
 MaelstromSurge.buff_duration = 5
@@ -1414,7 +1428,6 @@ local ChaosBrand = Ability:Add(1490, false, false)
 ChaosBrand.value = 0.03
 local HuntersMark = Ability:Add(257284, false, false)
 HuntersMark.value = 0.05
-
 -- Class cooldowns
 local Bloodlust = Ability:Add(2825, false, true)
 Bloodlust.buff_duration = 40
@@ -1580,8 +1593,13 @@ Pet.SurgingTotem = SummonedPet:Add(225409, 24, SurgingTotem)
 
 -- Start Inventory Items
 
-local InventoryItem, inventoryItems, Trinket = {}, {}, {}
+local InventoryItem, Trinket = {}, {}
 InventoryItem.__index = InventoryItem
+
+local InventoryItems = {
+	all = {},
+	byItemId = {},
+}
 
 function InventoryItem:Add(itemId)
 	local name, _, _, _, _, _, _, _, _, icon = GetItemInfo(itemId)
@@ -1591,9 +1609,11 @@ function InventoryItem:Add(itemId)
 		icon = icon,
 		can_use = false,
 		off_gcd = true,
+		keybinds = {},
 	}
 	setmetatable(item, self)
-	inventoryItems[#inventoryItems + 1] = item
+	InventoryItems.all[#InventoryItems.all + 1] = item
+	InventoryItems.byItemId[itemId] = item
 	return item
 end
 
@@ -1682,6 +1702,14 @@ end
 
 -- Start Player Functions
 
+function Player:ManaTimeToMax()
+	local deficit = self.mana.max - self.mana.current
+	if deficit <= 0 then
+		return 0
+	end
+	return deficit / self.mana.regen
+end
+
 function Player:ResetSwing(mainHand, offHand, missed)
 	local mh, oh = UnitAttackSpeed('player')
 	if mainHand then
@@ -1692,14 +1720,6 @@ function Player:ResetSwing(mainHand, offHand, missed)
 		self.swing.oh.speed = (oh or 0)
 		self.swing.oh.last = self.time
 	end
-end
-
-function Player:ManaTimeToMax()
-	local deficit = self.mana.max - self.mana.current
-	if deficit <= 0 then
-		return 0
-	end
-	return deficit / self.mana.regen
 end
 
 function Player:TimeInCombat()
@@ -2020,14 +2040,14 @@ function Player:Update()
 	if CallOfTheAncestors.known then
 		CallOfTheAncestors.active = Pet.Ancestor:Count()
 	end
+	speed, max_speed = GetUnitSpeed('player')
+	self.moving = speed ~= 0
+	self.movement_speed = max_speed / 7 * 100
 	speed_mh, speed_oh = UnitAttackSpeed('player')
 	self.swing.mh.speed = speed_mh or 0
 	self.swing.oh.speed = speed_oh or 0
 	self.swing.mh.remains = max(0, self.swing.mh.last + self.swing.mh.speed - self.time)
 	self.swing.oh.remains = max(0, self.swing.oh.last + self.swing.oh.speed - self.time)
-	speed, max_speed = GetUnitSpeed('player')
-	self.moving = speed ~= 0
-	self.movement_speed = max_speed / 7 * 100
 	self:UpdateThreat()
 
 	SummonedPets:Purge()
@@ -2053,14 +2073,17 @@ end
 
 function Player:Init()
 	local _
-	if #UI.glows == 0 then
+	if not self.initialized then
+		UI:ScanActionButtons()
+		UI:ScanActionSlots()
 		UI:DisableOverlayGlows()
 		UI:CreateOverlayGlows()
 		UI:HookResourceFrame()
+		self.guid = UnitGUID('player')
+		self.name = UnitName('player')
+		self.initialized = true
 	end
 	farseerPreviousPanel.ability = nil
-	self.guid = UnitGUID('player')
-	self.name = UnitName('player')
 	_, self.instance = IsInInstance()
 	Events:GROUP_ROSTER_UPDATE()
 	Events:PLAYER_SPECIALIZATION_CHANGED('player')
@@ -2086,7 +2109,9 @@ function Target:UpdateHealth(reset)
 		table.remove(self.health.history, 1)
 		self.health.history[25] = self.health.current
 	end
-	self.timeToDieMax = self.health.current / Player.health.max * (Player.spec == SPEC.RESTORATION and 25 or 15)
+	self.timeToDieMax = self.health.current / Player.health.max * (
+		15 + (Player.spec == SPEC.RESTORATION and 10 or 0)
+	)
 	self.health.pct = self.health.max > 0 and (self.health.current / self.health.max * 100) or 100
 	self.health.loss_per_sec = (self.health.history[1] - self.health.current) / 5
 	self.timeToDie = (
@@ -2222,11 +2247,11 @@ function StormElemental:Remains()
 	return max(Pet.GreaterStormElemental:Remains(), Pet.PrimalStormElemental:Remains())
 end
 
-function LightningBolt:Usable()
+function LightningBolt:Usable(...)
 	if Tempest.known and Tempest:React() > 0 then
 		return false
 	end
-	return Ability.Usable(self)
+	return Ability.Usable(self, ...)
 end
 
 function LightningBolt:Free()
@@ -2367,12 +2392,12 @@ function Hailstorm:Stack()
 	return clamp(stack, 0, self.max_stack)
 end
 
-function Stormstrike:Usable()
-	return AscendanceAir:Down() and Ability.Usable(self)
+function Stormstrike:Usable(...)
+	return AscendanceAir:Down() and Ability.Usable(self, ...)
 end
 
-function Windstrike:Usable()
-	return AscendanceAir:Up() and Ability.Usable(self)
+function Windstrike:Usable(...)
+	return AscendanceAir:Up() and Ability.Usable(self, ...)
 end
 
 function MasterOfTheElements:Remains()
@@ -3826,8 +3851,8 @@ hooksecurefunc('ActionButton_ShowOverlayGlow', UI.DenyOverlayGlow) -- Disable Bl
 function UI:UpdateGlowColorAndScale()
 	local w, h, glow
 	local r, g, b = Opt.glow.color.r, Opt.glow.color.g, Opt.glow.color.b
-	for i = 1, #self.glows do
-		glow = self.glows[i]
+	for i, button in next, self.buttons do
+		glow = button['glow' .. ADDON]
 		w, h = glow.button:GetSize()
 		glow:SetSize(w * 1.4, h * 1.4)
 		glow:SetPoint('TOPLEFT', glow.button, 'TOPLEFT', -w * 0.2 * Opt.scale.glow, h * 0.2 * Opt.scale.glow)
@@ -3838,92 +3863,223 @@ function UI:UpdateGlowColorAndScale()
 end
 
 function UI:DisableOverlayGlows()
-	if LibStub and LibStub.GetLibrary and not Opt.glow.blizzard then
-		local lib = LibStub:GetLibrary('LibButtonGlow-1.0', true)
-		if lib then
-			lib.ShowOverlayGlow = function(self)
-				return
-			end
+	if Opt.glow.blizzard or not LibStub then
+		return
+	end
+	local lib = LibStub:GetLibrary('LibButtonGlow-1.0', true)
+	if lib then
+		lib.ShowOverlayGlow = function(...)
+			return lib.HideOverlayGlow(...)
 		end
 	end
 end
 
-function UI:CreateOverlayGlows()
-	local GenerateGlow = function(button)
-		if button then
-			local glow = CreateFrame('Frame', nil, button, 'ActionBarButtonSpellActivationAlert')
-			glow:Hide()
-			glow.ProcStartAnim:Play() -- will bug out if ProcLoop plays first
-			glow.button = button
-			self.glows[#self.glows + 1] = glow
-		end
-	end
-	for i = 1, 12 do
-		GenerateGlow(_G['ActionButton' .. i])
-		GenerateGlow(_G['MultiBarLeftButton' .. i])
-		GenerateGlow(_G['MultiBarRightButton' .. i])
-		GenerateGlow(_G['MultiBarBottomLeftButton' .. i])
-		GenerateGlow(_G['MultiBarBottomRightButton' .. i])
-	end
-	for i = 1, 10 do
-		GenerateGlow(_G['PetActionButton' .. i])
-	end
+function UI:ScanActionButtons()
+	wipe(self.buttons)
 	if Bartender4 then
 		for i = 1, 120 do
-			GenerateGlow(_G['BT4Button' .. i])
+			self.buttons[#self.buttons + 1] = _G['BT4Button' .. i]
 		end
-	end
-	if Dominos then
-		for i = 1, 60 do
-			GenerateGlow(_G['DominosActionButton' .. i])
+		for i = 1, 10 do
+			self.buttons[#self.buttons + 1] = _G['BT4PetButton' .. i]
 		end
+		return
 	end
 	if ElvUI then
 		for b = 1, 6 do
 			for i = 1, 12 do
-				GenerateGlow(_G['ElvUI_Bar' .. b .. 'Button' .. i])
+				self.buttons[#self.buttons + 1] = _G['ElvUI_Bar' .. b .. 'Button' .. i]
 			end
 		end
+		return
 	end
 	if LUI then
 		for b = 1, 6 do
 			for i = 1, 12 do
-				GenerateGlow(_G['LUIBarBottom' .. b .. 'Button' .. i])
-				GenerateGlow(_G['LUIBarLeft' .. b .. 'Button' .. i])
-				GenerateGlow(_G['LUIBarRight' .. b .. 'Button' .. i])
+				self.buttons[#self.buttons + 1] = _G['LUIBarBottom' .. b .. 'Button' .. i]
+				self.buttons[#self.buttons + 1] = _G['LUIBarLeft' .. b .. 'Button' .. i]
+				self.buttons[#self.buttons + 1] = _G['LUIBarRight' .. b .. 'Button' .. i]
 			end
 		end
+		return
+	end
+	if Dominos then
+		for i = 1, 60 do
+			self.buttons[#self.buttons + 1] = _G['DominosActionButton' .. i]
+		end
+		-- fallthrough because Dominos re-uses Blizzard action buttons
+	end
+	for i = 1, 12 do
+		self.buttons[#self.buttons + 1] = _G['ActionButton' .. i]
+		self.buttons[#self.buttons + 1] = _G['MultiBarLeftButton' .. i]
+		self.buttons[#self.buttons + 1] = _G['MultiBarRightButton' .. i]
+		self.buttons[#self.buttons + 1] = _G['MultiBarBottomLeftButton' .. i]
+		self.buttons[#self.buttons + 1] = _G['MultiBarBottomRightButton' .. i]
+		self.buttons[#self.buttons + 1] = _G['MultiBar5Button' .. i]
+		self.buttons[#self.buttons + 1] = _G['MultiBar6Button' .. i]
+		self.buttons[#self.buttons + 1] = _G['MultiBar7Button' .. i]
+	end
+	for i = 1, 10 do
+		self.buttons[#self.buttons + 1] = _G['PetActionButton' .. i]
+	end
+end
+
+function UI:CreateOverlayGlows()
+	local glow
+	for i, button in next, self.buttons do
+		glow = button['glow' .. ADDON] or CreateFrame('Frame', nil, button, 'ActionBarButtonSpellActivationAlert')
+		glow:Hide()
+		glow.ProcStartAnim:Play() -- will bug out if ProcLoop plays first
+		glow.button = button
+		button['glow' .. ADDON] = glow
 	end
 	self:UpdateGlowColorAndScale()
 end
 
 function UI:UpdateGlows()
-	local glow, icon
-	for i = 1, #self.glows do
-		glow = self.glows[i]
-		icon = glow.button.icon:GetTexture()
-		if icon and glow.button.icon:IsVisible() and (
-			(Opt.glow.main and Player.main and icon == Player.main.icon) or
-			(Opt.glow.cooldown and Player.cd and icon == Player.cd.icon) or
-			(Opt.glow.interrupt and Player.interrupt and icon == Player.interrupt.icon) or
-			(Opt.glow.extra and Player.extra and icon == Player.extra.icon)
+	local glow, action
+	for _, slot in next, self.action_slots do
+		action = slot.action
+		for _, button in next, slot.buttons do
+			glow = button['glow' .. ADDON]
+			if action and button:IsVisible() and (
+				(Opt.glow.main and action == Player.main) or
+				(Opt.glow.cooldown and action == Player.cd) or
+				(Opt.glow.interrupt and action == Player.interrupt) or
+				(Opt.glow.extra and action == Player.extra)
 			) then
-			if not glow:IsVisible() then
-				glow:Show()
-				if Opt.glow.animation then
-					glow.ProcStartAnim:Play()
-				else
-					glow.ProcLoop:Play()
+				if not glow:IsVisible() then
+					glow:Show()
+					if Opt.glow.animation then
+						glow.ProcStartAnim:Play()
+					else
+						glow.ProcLoop:Play()
+					end
 				end
+			elseif glow:IsVisible() then
+				if glow.ProcStartAnim:IsPlaying() then
+					glow.ProcStartAnim:Stop()
+				end
+				if glow.ProcLoop:IsPlaying() then
+					glow.ProcLoop:Stop()
+				end
+				glow:Hide()
 			end
-		elseif glow:IsVisible() then
-			if glow.ProcStartAnim:IsPlaying() then
-				glow.ProcStartAnim:Stop()
+		end
+	end
+end
+
+UI.KeybindPatterns = {
+	['ALT%-'] = 'a-',
+	['CTRL%-'] = 'c-',
+	['SHIFT%-'] = 's-',
+	['META%-'] = 'm-',
+	['NUMPAD'] = 'NP',
+	['PLUS'] = '%+',
+	['MINUS'] = '%-',
+	['MULTIPLY'] = '%*',
+	['DIVIDE'] = '%/',
+	['BACKSPACE'] = 'BS',
+	['BUTTON'] = 'MB',
+	['CLEAR'] = 'Clr',
+	['DELETE'] = 'Del',
+	['END'] = 'End',
+	['HOME'] = 'Home',
+	['INSERT'] = 'Ins',
+	['MOUSEWHEELDOWN'] = 'MwD',
+	['MOUSEWHEELUP'] = 'MwU',
+	['PAGEDOWN'] = 'PgDn',
+	['PAGEUP'] = 'PgUp',
+	['CAPSLOCK'] = 'Caps',
+	['NUMLOCK'] = 'NumL',
+	['SCROLLLOCK'] = 'ScrL',
+	['SPACEBAR'] = 'Space',
+	['SPACE'] = 'Space',
+	['TAB'] = 'Tab',
+	['DOWNARROW'] = 'Down',
+	['LEFTARROW'] = 'Left',
+	['RIGHTARROW'] = 'Right',
+	['UPARROW'] = 'Up',
+}
+
+function UI:GetButtonKeybind(button)
+	local bind = button.bindingAction or (button.config and button.config.keyBoundTarget)
+	if bind then
+		local key = GetBindingKey(bind)
+		if key then
+			key = key:gsub(' ', ''):upper()
+			for pattern, short in next, self.KeybindPatterns do
+				key = key:gsub(pattern, short)
 			end
-			if glow.ProcLoop:IsPlaying() then
-				glow.ProcLoop:Stop()
+			return key
+		end
+	end
+end
+
+function UI:GetActionFromID(actionId)
+	local actionType, id, subType = GetActionInfo(actionId)
+	if id and type(id) == 'number' and id > 0 then
+		if (actionType == 'item' or (actionType == 'macro' and subType == 'item')) then
+			return InventoryItems.byItemId[id]
+		elseif (actionType == 'spell' or (actionType == 'macro' and subType == 'spell')) then
+			return Abilities.bySpellId[id]
+		end
+	end
+end
+
+function UI:UpdateActionSlot(actionId)
+	local slot = self.action_slots[actionId]
+	if not slot then
+		return
+	end
+	local action = self:GetActionFromID(actionId)
+	if action ~= slot.action then
+		if slot.action then
+			slot.action.keybinds[actionId] = nil
+		end
+		slot.action = action
+	end
+	if not action then
+		return
+	end
+	for _, button in next, slot.buttons do
+		action.keybinds[actionId] = self:GetButtonKeybind(button)
+		if action.keybinds[actionId] then
+			return
+		end
+	end
+	action.keybinds[actionId] = nil
+end
+
+function UI:UpdateBindings()
+	for _, item in next, InventoryItems.all do
+		wipe(item.keybinds)
+	end
+	for _, ability in next, Abilities.all do
+		wipe(ability.keybinds)
+	end
+	for actionId in next, self.action_slots do
+		self:UpdateActionSlot(actionId)
+	end
+end
+
+function UI:ScanActionSlots()
+	wipe(self.action_slots)
+	local actionId, buttons
+	for _, button in next, self.buttons do
+		actionId = (
+			(button._state_type == 'action' and button._state_action) or
+			(button.CalculateAction and button:CalculateAction()) or
+			(button:GetAttribute('action'))
+		) or 0
+		if actionId > 0 then
+			if not self.action_slots[actionId] then
+				self.action_slots[actionId] = {
+					buttons = {},
+				}
 			end
-			glow:Hide()
+			buttons = self.action_slots[actionId].buttons
+			buttons[#buttons + 1] = button
 		end
 	end
 end
@@ -3960,8 +4116,10 @@ end
 
 function UI:UpdateScale()
 	farseerPanel:SetSize(64 * Opt.scale.main, 64 * Opt.scale.main)
+	farseerPanel.text:SetScale(Opt.scale.main)
 	farseerPreviousPanel:SetSize(64 * Opt.scale.previous, 64 * Opt.scale.previous)
 	farseerCooldownPanel:SetSize(64 * Opt.scale.cooldown, 64 * Opt.scale.cooldown)
+	farseerCooldownPanel.text:SetScale(Opt.scale.cooldown)
 	farseerInterruptPanel:SetSize(64 * Opt.scale.interrupt, 64 * Opt.scale.interrupt)
 	farseerExtraPanel:SetSize(64 * Opt.scale.extra, 64 * Opt.scale.extra)
 end
@@ -4068,7 +4226,7 @@ end
 
 function UI:UpdateDisplay()
 	Timer.display = 0
-	local border, dim, dim_cd, text_cd, text_center, text_tl, text_tr
+	local border, dim, dim_cd, text_cd, text_center, text_tl, text_tr, text_bl, text_cd_center, text_cd_tr
 	local channel = Player.channel
 
 	if Opt.dimmer then
@@ -4089,12 +4247,24 @@ function UI:UpdateDisplay()
 		if Player.main_freecast then
 			border = 'freecast'
 		end
+		if Opt.keybinds then
+			for _, bind in next, Player.main.keybinds do
+				text_tr = bind
+				break
+			end
+		end
 	end
 	if Player.cd then
 		if Player.cd.requires_react then
 			local react = Player.cd:React()
 			if react > 0 then
-				text_cd = format('%.1f', react)
+				text_cd_center = format('%.1f', react)
+			end
+		end
+		if Opt.keybinds then
+			for _, bind in next, Player.cd.keybinds do
+				text_cd_tr = bind
+				break
 			end
 		end
 	end
@@ -4122,28 +4292,27 @@ function UI:UpdateDisplay()
 			end
 		end
 	end
-	if MaelstromWeapon.known and MaelstromWeapon.current > 0 then
-		text_tl = MaelstromWeapon.current
-	end
 	if Pet.SpiritWolf.known and FeralSpirit.active > 0 then
-		text_tr = FeralSpirit.active
+		text_tl = FeralSpirit.active
 	elseif CallOfTheAncestors.known and CallOfTheAncestors.active > 0 then
-		text_tr = CallOfTheAncestors.active
+		text_tl = CallOfTheAncestors.active
 	end
 	if Player.major_cd_remains > 0 then
-		text_center = format('%.1fs', Player.major_cd_remains)
+		text_bl = format('%.1fs', Player.major_cd_remains)
 	end
 	if border ~= farseerPanel.border.overlay then
 		farseerPanel.border.overlay = border
 		farseerPanel.border:SetTexture(ADDON_PATH .. (border or 'border') .. '.blp')
 	end
+
 	farseerPanel.dimmer:SetShown(dim)
 	farseerPanel.text.center:SetText(text_center)
 	farseerPanel.text.tl:SetText(text_tl)
 	farseerPanel.text.tr:SetText(text_tr)
-	--farseerPanel.text.bl:SetText(format('%.1fs', Target.timeToDie))
-	farseerCooldownPanel.text:SetText(text_cd)
+	farseerPanel.text.bl:SetText(text_bl)
 	farseerCooldownPanel.dimmer:SetShown(dim_cd)
+	farseerCooldownPanel.text.center:SetText(text_cd_center)
+	farseerCooldownPanel.text.tr:SetText(text_cd_tr)
 end
 
 function UI:UpdateCombat()
@@ -4273,6 +4442,7 @@ end
 
 CombatEvent.SWING_DAMAGE = function(event, srcGUID, dstGUID, amount, overkill, spellSchool, resisted, blocked, absorbed, critical, glancing, crushing, offHand)
 	if srcGUID == Player.guid then
+		Player:ResetSwing(not offHand, offHand)
 		if Opt.auto_aoe then
 			AutoAoe:Add(dstGUID, true)
 		end
@@ -4286,6 +4456,7 @@ end
 
 CombatEvent.SWING_MISSED = function(event, srcGUID, dstGUID, missType, offHand, amountMissed)
 	if srcGUID == Player.guid then
+		Player:ResetSwing(not offHand, offHand, true)
 		if Opt.auto_aoe and not (missType == 'EVADE' or missType == 'IMMUNE') then
 			AutoAoe:Add(dstGUID, true)
 		end
@@ -4310,6 +4481,8 @@ CombatEvent.SPELL_SUMMON = function(event, srcGUID, dstGUID)
 		pet:AddUnit(dstGUID)
 	end
 end
+
+--local UnknownSpell = {}
 
 CombatEvent.SPELL = function(event, srcGUID, dstGUID, spellId, spellName, spellSchool, missType, overCap, powerType)
 	if srcGUID ~= Player.guid then
@@ -4337,7 +4510,15 @@ CombatEvent.SPELL = function(event, srcGUID, dstGUID, spellId, spellName, spellS
 
 	local ability = spellId and Abilities.bySpellId[spellId]
 	if not ability then
-		--log(format('%.3f EVENT %s TRACK CHECK FOR UNKNOWN %s ID %d', Player.time, event, type(spellName) == 'string' and spellName or 'Unknown', spellId or 0))
+--[[
+		if not UnknownSpell[event] then
+			UnknownSpell[event] = {}
+		end
+		if not UnknownSpell[event][spellId] then
+			UnknownSpell[event][spellId] = true
+			log(format('%.3f EVENT %s TRACK CHECK FOR UNKNOWN %s ID %d FROM %s ON %s', Player.time, event, type(spellName) == 'string' and spellName or 'Unknown', spellId or 0, srcGUID, dstGUID))
+		end
+]]
 		return
 	end
 
@@ -4507,19 +4688,19 @@ function Events:PLAYER_EQUIPMENT_CHANGED()
 			Trinket2.itemId = 0
 		end
 	end
-	for i = 1, #inventoryItems do
-		inventoryItems[i].name, _, _, _, _, _, _, _, equipType, inventoryItems[i].icon = GetItemInfo(inventoryItems[i].itemId or 0)
-		inventoryItems[i].can_use = inventoryItems[i].name and true or false
+	for _, i in next, InventoryItems.all do
+		i.name, _, _, _, _, _, _, _, equipType, i.icon = GetItemInfo(i.itemId or 0)
+		i.can_use = i.name and true or false
 		if equipType and equipType ~= '' then
 			hasCooldown = 0
-			_, inventoryItems[i].equip_slot = Player:Equipped(inventoryItems[i].itemId)
-			if inventoryItems[i].equip_slot then
-				_, _, hasCooldown = GetInventoryItemCooldown('player', inventoryItems[i].equip_slot)
+			_, i.equip_slot = Player:Equipped(i.itemId)
+			if i.equip_slot then
+				_, _, hasCooldown = GetInventoryItemCooldown('player', i.equip_slot)
 			end
-			inventoryItems[i].can_use = hasCooldown == 1
+			i.can_use = hasCooldown == 1
 		end
-		if Player.item_use_blacklist[inventoryItems[i].itemId] then
-			inventoryItems[i].can_use = false
+		if Player.item_use_blacklist[i.itemId] then
+			i.can_use = false
 		end
 	end
 
@@ -4540,6 +4721,7 @@ function Events:PLAYER_SPECIALIZATION_CHANGED(unitId)
 	Events:PLAYER_REGEN_ENABLED()
 	Events:UNIT_HEALTH('player')
 	Events:UNIT_MAXPOWER('player')
+	Events:UPDATE_BINDINGS()
 	UI.OnResourceFrameShow()
 	Target:Update()
 	Player:Update()
@@ -4569,9 +4751,27 @@ function Events:PLAYER_PVP_TALENT_UPDATE()
 	Player:UpdateKnown()
 end
 
-function Events:ACTIONBAR_SLOT_CHANGED()
+function Events:ACTIONBAR_SLOT_CHANGED(slot)
+	if not slot or slot < 1 then
+		UI:ScanActionSlots()
+		UI:UpdateBindings()
+	else
+		UI:UpdateActionSlot(slot)
+	end
 	UI:UpdateGlows()
 end
+
+function Events:ACTIONBAR_PAGE_CHANGED()
+	C_Timer.After(0, function()
+		Events:ACTIONBAR_SLOT_CHANGED(0)
+	end)
+end
+Events.UPDATE_BONUS_ACTIONBAR = Events.ACTIONBAR_PAGE_CHANGED
+
+function Events:UPDATE_BINDINGS()
+	UI:UpdateBindings()
+end
+Events.GAME_PAD_ACTIVE_CHANGED = Events.UPDATE_BINDINGS
 
 function Events:GROUP_ROSTER_UPDATE()
 	Player.group_size = clamp(GetNumGroupMembers(), 1, 40)
@@ -4814,6 +5014,12 @@ SlashCmdList[ADDON] = function(msg, editbox)
 		end
 		return Status('Spell casting swipe animation', Opt.spell_swipe)
 	end
+	if startsWith(msg[1], 'key') or startsWith(msg[1], 'bind') then
+		if msg[2] then
+			Opt.keybinds = msg[2] == 'on'
+		end
+		return Status('Show keybinding text on main ability icon (topright)', Opt.keybinds)
+	end
 	if startsWith(msg[1], 'dim') then
 		if msg[2] then
 			Opt.dimmer = msg[2] == 'on'
@@ -4840,21 +5046,21 @@ SlashCmdList[ADDON] = function(msg, editbox)
 		end
 		return Status('Only use cooldowns on bosses', Opt.boss_only)
 	end
-	if msg[1] == 'hidespec' or startsWith(msg[1], 'spec') then
+	if startsWith(msg[1], 'hide') or startsWith(msg[1], 'spec') then
 		if msg[2] then
 			if startsWith(msg[2], 'el') then
 				Opt.hide.elemental = not Opt.hide.elemental
-				events:PLAYER_SPECIALIZATION_CHANGED('player')
+				Events:PLAYER_SPECIALIZATION_CHANGED('player')
 				return Status('Elemental specialization', not Opt.hide.elemental)
 			end
 			if startsWith(msg[2], 'en') then
 				Opt.hide.enhancement = not Opt.hide.enhancement
-				events:PLAYER_SPECIALIZATION_CHANGED('player')
+				Events:PLAYER_SPECIALIZATION_CHANGED('player')
 				return Status('Enhancement specialization', not Opt.hide.enhancement)
 			end
 			if startsWith(msg[2], 'r') then
 				Opt.hide.restoration = not Opt.hide.restoration
-				events:PLAYER_SPECIALIZATION_CHANGED('player')
+				Events:PLAYER_SPECIALIZATION_CHANGED('player')
 				return Status('Restoration specialization', not Opt.hide.restoration)
 			end
 		end
@@ -4937,6 +5143,7 @@ SlashCmdList[ADDON] = function(msg, editbox)
 		'always |cFF00C000on|r/|cFFC00000off|r - show the ' .. ADDON .. ' UI without a target',
 		'cd |cFF00C000on|r/|cFFC00000off|r - use ' .. ADDON .. ' for cooldown management',
 		'swipe |cFF00C000on|r/|cFFC00000off|r - show spell casting swipe animation on main ability icon',
+		'keybind |cFF00C000on|r/|cFFC00000off|r - show keybinding text on main ability icon (topright)',
 		'dim |cFF00C000on|r/|cFFC00000off|r - dim main ability icon when you don\'t have enough resources to use it',
 		'miss |cFF00C000on|r/|cFFC00000off|r - red border around previous ability when it fails to hit',
 		'aoe |cFF00C000on|r/|cFFC00000off|r - allow clicking main ability icon to toggle amount of targets (disables moving)',
