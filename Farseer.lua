@@ -304,8 +304,9 @@ local Player = {
 		last_taken = 0,
 	},
 	set_bonus = {
-		t33 = 0, -- Waves of the Forgotten Reservoir
-		tww3 = 0,
+		tww1 = 0, -- Waves of the Forgotten Reservoir
+		tww2 = 0, -- Currents of the Gale Sovereign
+		tww3 = 0, -- Howls of Channeled Fury
 	},
 	previous_gcd = {},-- list of previous GCD abilities
 	item_use_blacklist = { -- list of item IDs with on-use effects we should mark unusable
@@ -1112,9 +1113,6 @@ local Skyfury = Ability:Add(462854, true, false)
 Skyfury.buff_duration = 3600
 Skyfury.mana_cost = 4
 ------ Talents
-local AncestralGuidance = Ability:Add(108281, true, true)
-AncestralGuidance.buff_duration = 10
-AncestralGuidance.cooldown_duration = 120
 local AstralShift = Ability:Add(108271, true, true)
 AstralShift.buff_duration = 12
 AstralShift.cooldown_duration = 120
@@ -1144,6 +1142,7 @@ local EarthShield = Ability:Add(974, true, true, 383648)
 EarthShield.buff_duration = 600
 EarthShield.cooldown_duration = 3
 EarthShield.mana_cost = 5
+EarthShield.max_stack = 9
 local EchoOfTheElements = Ability:Add(333919, true, true)
 local ElementalOrbit = Ability:Add(383010, false, true)
 local EyeOfTheStorm = Ability:Add(381708, false, true)
@@ -1195,9 +1194,8 @@ WindShear.cooldown_duration = 12
 ------ Procs
 local LavaSurge = Ability:Add(77756, true, true, 77762)
 LavaSurge.buff_duration = 10
+LavaSurge.max_stack = 1
 ---- Elemental
-local MasterOfTheElements = Ability:Add(16166, true, true, 260734)
-MasterOfTheElements.buff_duration = 15
 ------ Talents
 local AscendanceFlame = Ability:Add(114050, true, true)
 AscendanceFlame.buff_duration = 15
@@ -1220,12 +1218,14 @@ ElementalBlast.consume_mw = true
 ElementalBlast.requires_charge = true
 ElementalBlast.triggers_combat = true
 ElementalBlast:SetVelocity(40)
-ElementalBlast.crit = Ability:Add(118522, true, true)
-ElementalBlast.crit.buff_duration = 10
-ElementalBlast.haste = Ability:Add(173183, true, true)
-ElementalBlast.haste.buff_duration = 10
-ElementalBlast.mastery = Ability:Add(173184, true, true)
-ElementalBlast.mastery.buff_duration = 10
+ElementalBlast.Crit = Ability:Add(118522, true, true)
+ElementalBlast.Crit.buff_duration = 10
+ElementalBlast.Haste = Ability:Add(173183, true, true)
+ElementalBlast.Haste.buff_duration = 10
+ElementalBlast.Mastery = Ability:Add(173184, true, true)
+ElementalBlast.Mastery.buff_duration = 10
+local EruptingLava = Ability:Add(468574, false, true, 468615)
+EruptingLava.duration_gain = 6.0
 local FireElemental = Ability:Add(198067, true, true, 188592)
 FireElemental.buff_duration = 30
 FireElemental.cooldown_duration = 150
@@ -1236,16 +1236,31 @@ local FlowOfPower = Ability:Add(385923, false, true)
 local FuryOfTheStorms = Ability:Add(191717, true, true, 191716)
 FuryOfTheStorms.buff_duration = 10
 local FusionOfElements = Ability:Add(462840, true, true)
+FusionOfElements.buff_duration = 20
 FusionOfElements.Fire = Ability:Add(462843, true, true)
 FusionOfElements.Fire.buff_duration = 20
 FusionOfElements.Nature = Ability:Add(462841, true, true)
 FusionOfElements.Nature.buff_duration = 20
 local HeraldOfTheStorms = Ability:Add(468571, false, true)
+HeraldOfTheStorms.cooldown_reduction = 2.0
+local Icefury = Ability:Add(462816, false, true)
+Icefury.mana_cost = 0.6
+Icefury.maelstrom_gain = 12
+Icefury.requires_react = true
+Icefury.triggers_combat = true
+Icefury:SetVelocity(40)
+Icefury.buff = Ability:Add(462818, true, true)
+Icefury.buff.buff_duration = 30
+Icefury.buff.max_stack = 2
+Icefury.Dmg = Ability:Add(210714, true, true)
+Icefury.Dmg.buff_duration = 25
+Icefury.Dmg.max_stack = 2
+Icefury.Dmg:SetVelocity(40)
 local ImprovedFlametongueWeapon = Ability:Add(382027, true, true, 382028)
 ImprovedFlametongueWeapon.buff_duration = 3600
 local LightningRod = Ability:Add(210689, true, true, 197209)
 LightningRod.buff_duration = 8
-LightningRod.value = 0.20
+LightningRod.value = 0.10
 LightningRod:Track()
 local LiquidMagmaTotem = Ability:Add(192222, false, true)
 LiquidMagmaTotem.buff_duration = 6
@@ -1256,6 +1271,8 @@ LiquidMagmaTotem:AutoAoe(false)
 local MagmaChamber = Ability:Add(381932, true, true, 381933)
 MagmaChamber.buff_duration = 21
 MagmaChamber.max_stack = 10
+local MasterOfTheElements = Ability:Add(16166, true, true, 260734)
+MasterOfTheElements.buff_duration = 15
 local PowerOfTheMaelstrom = Ability:Add(191861, true, true, 191877)
 PowerOfTheMaelstrom.buff_duration = 20
 PowerOfTheMaelstrom.max_stack = 2
@@ -1273,6 +1290,7 @@ StormFrenzy.max_stack = 2
 local StormkeeperEle = Ability:Add(191634, true, true)
 StormkeeperEle.buff_duration = 15
 StormkeeperEle.cooldown_duration = 60
+StormkeeperEle.max_stack = 3
 local SurgeOfPower = Ability:Add(262303, true, true, 285514)
 SurgeOfPower.buff_duration = 15
 local SwellingMaelstrom = Ability:Add(381707, false, true)
@@ -1280,16 +1298,8 @@ local ThunderstrikeWard = Ability:Add(462757, true, true)
 ThunderstrikeWard.buff_duration = 3600
 ThunderstrikeWard.enchant_id = 7587
 ------ Procs
-local Icefury = Ability:Add(462816, true, true, 462818)
-Icefury.buff_duration = 30
-Icefury.mana_cost = 0.6
-Icefury.max_stack = 2
-Icefury.requires_react = true
-Icefury.triggers_combat = true
-Icefury:SetVelocity(40)
-Icefury.Dmg = Ability:Add(210714, false, true)
-Icefury.Dmg.buff_duration = 25
-Icefury.Dmg.max_stack = 4
+local WindGust = Ability:Add(263806, true, true) -- Storm Elemental
+WindGust.max_stack = 4
 ---- Enhancement
 local MaelstromWeapon = Ability:Add(187880, true, true, 344179)
 MaelstromWeapon.buff_duration = 30
@@ -1345,6 +1355,7 @@ LavaLash.mana_cost = 0.16
 LavaLash.hasted_cooldown = true
 local MoltenAssault = Ability:Add(334033, false, true)
 local RagingMaelstrom = Ability:Add(384143, false, true)
+RagingMaelstrom.stack_gain = 5
 local StaticAccumulation = Ability:Add(384411, true, true, 384437)
 StaticAccumulation.buff_duration = 15
 StaticAccumulation.tick_interval = 1
@@ -1356,6 +1367,8 @@ local Stormstrike = Ability:Add(17364, false, true)
 Stormstrike.cooldown_duration = 7.5
 Stormstrike.mana_cost = 0.4
 Stormstrike.hasted_cooldown = true
+Stormstrike.buff = Ability:Add(188435, true, true)
+Stormstrike.buff.max_stack = 2
 local Sundering = Ability:Add(197214, false, true)
 Sundering.buff_duration = 2
 Sundering.cooldown_duration = 40
@@ -1369,7 +1382,7 @@ VoltaicBlaze.buff_duration = 20
 VoltaicBlaze.learn_spellId = 470053
 local WindfuryWeapon = Ability:Add(33757, true, true)
 WindfuryWeapon.enchant_id = 5401
-local Windstrike = Ability:Add(115356, false, true) -- Replaces Stormstrike during AscendanceAir
+local Windstrike = Ability:Add(115356, false, true) -- Replaces Stormstrike during Ascendance (Air)
 Windstrike.cooldown_duration = 7.5
 Windstrike.hasted_cooldown = true
 local WitchDoctorsAncestry = Ability:Add(384447, false, true)
@@ -1388,13 +1401,14 @@ MoltenWeapon.buff_duration = 15
 local Stormsurge = Ability:Add(201845, true, true, 201846)
 Stormsurge.buff_duration = 12
 ---- Restoration
-
+local WaterShield = Ability:Add(52127, true, true, 52128)
+WaterShield.buff_duration = 3600
+WaterShield.cooldown_duration = 3
+WaterShield.max_stack = 9
 ------ Talents
 
 ------ Procs
 
--- Aliases
-local Stormkeeper = StormkeeperEle
 -- Hero Talents
 ---- Farseer
 local AncestralSwiftness = Ability:Add(443454, true, true)
@@ -1413,10 +1427,9 @@ local AwakeningStorms = Ability:Add(455129, false, true, 455130)
 AwakeningStorms.buff = Ability:Add(462131, true, true)
 AwakeningStorms.buff.buff_duration = 3600
 AwakeningStorms.buff.max_stack = 3
+local ConductiveEnergy = Ability:Add(455123, false, true)
 local RollingThunder = Ability:Add(454026, true, true)
 local Supercharge = Ability:Add(455110, false, true)
-local SurgingCurrents = Ability:Add(454372, true, true, 454376)
-SurgingCurrents.buff_duration = 15
 local Tempest = Ability:Add(452201, false, true)
 Tempest.learn_spellId = 454009
 Tempest.mana_cost = 0.2
@@ -1440,9 +1453,9 @@ local TotemicRebound = Ability:Add(445025, true, true, 458269)
 TotemicRebound.buff_duration = 25
 TotemicRebound.max_stack = 10
 -- Tier set bonuses
-local AncestralWisdom = Ability:Add(1238279, true, true)
+local AncestralWisdom = Ability:Add(1238279, true, true) -- TWW S3 4pc (Elemental - Farseer)
 AncestralWisdom.buff_duration = 8
-local MaelstromSurge = Ability:Add(457727, true, true) -- T33 4pc (Elemental)
+local MaelstromSurge = Ability:Add(457727, true, true) -- TWW S1 4pc (Elemental)
 MaelstromSurge.buff_duration = 5
 -- Racials
 
@@ -1464,6 +1477,9 @@ local Heroism = Ability:Add(32182, true, false)
 Heroism.buff_duration = 40
 Heroism.cooldown_duration = 300
 Heroism.mana_cost = 0.4
+-- Aliases
+local Ascendance = AscendanceFlame
+local Stormkeeper = StormkeeperEle
 -- End Abilities
 
 -- Start Summoned Pets
@@ -1482,7 +1498,10 @@ function SummonedPets:Update()
 	wipe(self.known)
 	wipe(self.byUnitId)
 	for _, pet in next, self.all do
-		pet.known = pet.summon_spell and pet.summon_spell.known
+		pet.known = (
+			(pet.learn_spell and pet.learn_spell.known) or
+			(not pet.learn_spell and pet.summon_spell and pet.summon_spell.known)
+		)
 		if pet.known then
 			self.known[#SummonedPets.known + 1] = pet
 			self.byUnitId[pet.unitId] = pet
@@ -1504,12 +1523,13 @@ function SummonedPets:Clear()
 	end
 end
 
-function SummonedPet:Add(unitId, duration, summonSpell)
+function SummonedPet:Add(unitId, duration, summonSpell, learnSpell)
 	local pet = {
 		unitId = unitId,
 		duration = duration,
 		active_units = {},
 		summon_spell = summonSpell,
+		learn_spell = learnSpell,
 		known = false,
 	}
 	setmetatable(pet, self)
@@ -1601,7 +1621,7 @@ Pet.GreaterEarthElemental = SummonedPet:Add(95072, 60, EarthElemental)
 Pet.GreaterFireElemental = SummonedPet:Add(95061, 30, FireElemental)
 Pet.GreaterStormElemental = SummonedPet:Add(77936, 30, StormElemental)
 Pet.GreaterEarthElemental = SummonedPet:Add(95072, 60, EarthElemental)
-Pet.GreaterLightningElemental = SummonedPet:Add(97022, 10, FuryOfTheStorms)
+Pet.GreaterLightningElemental = SummonedPet:Add(97022, 10, StormkeeperEle, FuryOfTheStorms)
 Pet.PrimalEarthElemental = SummonedPet:Add(61056, 60, EarthElemental)
 Pet.PrimalFireElemental = SummonedPet:Add(61029, 30, FireElemental)
 Pet.PrimalStormElemental = SummonedPet:Add(77942, 30, StormElemental)
@@ -2026,9 +2046,13 @@ function Player:UpdateKnown()
 
 	AwakeningStorms.buff.known = AwakeningStorms.known
 	CrashLightning.buff.known = CrashLightning.known
+	Icefury.buff.known = Icefury.known
+	Icefury.Dmg.known = Icefury.known
 	IceStrike.buff.known = IceStrike.known or IceStrikeProc.known
 	IceStrikeProc.buff.kown = IceStrikeProc.known
+	WindGust.known = StormElemental.known
 	Windstrike.known = AscendanceAir.known or DeeplyRootedElements.known
+	Stormstrike.buff.known = Stormstrike.known
 	Tempest.buff.known = Tempest.known
 	if FrostShock.known then
 		if Hailstorm.known then
@@ -2044,6 +2068,7 @@ function Player:UpdateKnown()
 		if ElementalBlast.known then
 			LavaBurst.known = false
 		end
+		Ascendance = AscendanceAir
 		Stormkeeper = StormkeeperEnh
 	else
 		FlameShock.hasted_cooldown = false
@@ -2051,9 +2076,8 @@ function Player:UpdateKnown()
 		FrostShock.hasted_cooldown = false
 	end
 	if self.spec == SPEC.ELEMENTAL then
-		if self.set_bonus.t33 >= 4 then
-			MaelstromSurge.known = true
-		end
+		MaelstromSurge.known = self.set_bonus.tww1 >= 4
+		Ascendance = AscendanceFlame
 		Stormkeeper = StormkeeperEle
 	end
 	if ElementalSpirits.known then
@@ -2066,13 +2090,13 @@ function Player:UpdateKnown()
 		FusionOfElements.Nature.known = true
 	end
 	if ElementalBlast.known then
-		ElementalBlast.crit.known = true
-		ElementalBlast.haste.known = true
-		ElementalBlast.mastery.known = true
+		ElementalBlast.Crit.known = true
+		ElementalBlast.Haste.known = true
+		ElementalBlast.Mastery.known = true
 	end
-	MaelstromWeapon.max = MaelstromWeapon.max_stack + (RagingMaelstrom.known and 5 or 0)
 	if AncestralSwiftness.known then
 		NaturesSwiftness.known = false
+		AncestralWisdom.known = self.set_bonus.tww3 >= 4
 	end
 	if FlowingSpirits.known then
 		FeralSpirit.known = false
@@ -2082,9 +2106,24 @@ function Player:UpdateKnown()
 		Pet.SpiritWolf.duration = 15
 		Pet.SpiritWolf.summon_spell = FeralSpirit
 	end
+	if ConductiveEnergy.known then
+		LightningRod.known = true
+	end
+	if LightningRod.known then
+		LightningRod.triggered_by[EarthShock] = EarthShock.known
+		LightningRod.triggered_by[Earthquake] = Earthquake.known
+		LightningRod.triggered_by[ElementalBlast] = ElementalBlast.known
+		LightningRod.triggered_by[Tempest] = Tempest.known and ConductiveEnergy.known
+		LightningRod.triggered_by[LightningBolt] = LightningBolt.known and MaelstromWeapon.known
+		LightningRod.triggered_by[ChainLightning] = ChainLightning.known and MaelstromWeapon.known
+		LightningRod.triggered_by[PrimordialWave] = PrimordialWave.known and MaelstromWeapon.known
+		LightningRod.value = 0.10 - (MaelstromWeapon.known and 0.02 or 0)
+	end
 
 	Abilities:Update()
 	SummonedPets:Update()
+
+	MaelstromWeapon.max = MaelstromWeapon:MaxStack()
 
 	if APL[self.spec].precombat_variables then
 		APL[self.spec]:precombat_variables()
@@ -2233,7 +2272,7 @@ function Player:Update()
 		AutoAoe:Purge()
 	end
 
-	self.major_cd_remains = max(AscendanceAir:Remains(), AscendanceFlame:Remains())
+	self.major_cd_remains = Ascendance:Remains()
 
 	self.main = APL[self.spec]:Main()
 
@@ -2419,6 +2458,15 @@ function StormElemental:Remains()
 	return max(Pet.GreaterStormElemental:Remains(), Pet.PrimalStormElemental:Remains())
 end
 
+LightningRod.triggered_by = {}
+
+function LightningRod:Remains()
+	if self.known and Player.cast.ability and self.triggered_by[Player.cast.ability] then
+		return self:Duration()
+	end
+	return Ability.Remains(self)
+end
+
 function LightningBolt:Available(...)
 	return not Tempest:Available(...)
 end
@@ -2501,39 +2549,13 @@ ElementalBlast.MaelstromCost = EarthShock.MaelstromCost
 
 function FlameShock:Duration()
 	local duration = Ability.Duration(self)
+	if EruptingLava.known then
+		duration = duration + EruptingLava.duration_gain
+	end
 	if FireElemental.known and FireElemental:Up() then
 		duration = duration * 2
 	end
 	return duration
-end
-
-function FlameShock:Remains()
-	if PrimordialWave.known and PrimordialWave:Traveling() > 0 then
-		return self:Duration()
-	end
-	return Ability.Remains(self)
-end
-
-function FlameShock:Ticking()
-	local count, ticking = 0, {}
-	if self.aura_targets then
-		for guid, aura in next, self.aura_targets do
-			if aura.expires - Player.time > Player.execute_remains then
-				ticking[guid] = true
-			end
-		end
-	end
-	if PrimordialWave.known then
-		for _, cast in next, PrimordialWave.traveling do
-			if Player.time - cast.start < PrimordialWave.max_range / PrimordialWave.velocity then
-				ticking[cast.dstGUID] = true
-			end
-		end
-	end
-	for _ in next, ticking do
-		count = count + 1
-	end
-	return count
 end
 
 function FlameShock:Max()
@@ -2543,7 +2565,7 @@ end
 function MaelstromWeapon:MaxStack()
 	local stack = Ability.MaxStack(self)
 	if RagingMaelstrom.known then
-		stack = stack + 5
+		stack = stack + RagingMaelstrom.stack_gain
 	end
 	return stack
 end
@@ -2553,15 +2575,15 @@ function Hailstorm:Stack()
 	if Player.cast.ability and Player.cast.ability.consume_mw then
 		stack = stack + MaelstromWeapon.current
 	end
-	return clamp(stack, 0, self.max_stack)
+	return clamp(stack, 0, self:MaxStack())
 end
 
 function Stormstrike:Available(...)
-	return AscendanceAir:Down()
+	return not Windstrike:Available(...)
 end
 
 function Windstrike:Available(...)
-	return AscendanceAir:Up()
+	return Player.major_cd_remains > 0
 end
 
 function MasterOfTheElements:Remains()
@@ -2571,8 +2593,8 @@ function MasterOfTheElements:Remains()
 	if (
 		LightningBolt:Casting() or
 		ChainLightning:Casting() or
-		(Tempest.known and Tempest:Casting()) or
-		(ElementalBlast.known and ElementalBlast:Casting())
+		Tempest:Casting() or
+		ElementalBlast:Casting()
 	) then
 		return 0
 	end
@@ -2586,8 +2608,8 @@ function SurgeOfPower:Remains()
 	if (
 		LightningBolt:Casting() or
 		ChainLightning:Casting() or
-		(Tempest.known and Tempest:Casting()) or
-		(LavaBurst.known and LavaBurst:Casting())
+		Tempest:Casting() or
+		LavaBurst:Casting()
 	) then
 		return 0
 	end
@@ -2596,6 +2618,42 @@ end
 
 function AlphaWolf:MinRemains()
 	return 0 -- TODO
+end
+
+function StormFrenzy:Remains()
+	if self.known and ElementalBlast:Casting() then
+		return self:Duration()
+	end
+	if self:Stack() == 0 then
+		return 0
+	end
+	return Ability.Remains(self)
+end
+
+function StormFrenzy:Stack()
+	local stack = Ability.Stack(self)
+	if self.known and ElementalBlast:Casting() then
+		stack = stack + 1
+	elseif (
+		LightningBolt:Casting() or
+		ChainLightning:Casting() or
+		Tempest:Casting()
+	) then
+		stack = stack - 1
+	end
+	return clamp(stack, 0, self:MaxStack())
+end
+
+function StormkeeperEle:Cooldown()
+	local cooldown = Ability.Cooldown(self)
+	if HeraldOfTheStorms.known and (
+		LightningBolt:Casting() or
+		ChainLightning:Casting() or
+		Tempest:Casting()
+	) then
+		cooldown = cooldown - HeraldOfTheStorms.cooldown_reduction
+	end
+	return max(0, cooldown)
 end
 
 function ThorimsInvocation:LightningBolt()
@@ -2626,10 +2684,18 @@ function Tempest:Free()
 end
 
 function Tempest.buff:Remains()
-	if Tempest:Casting() then
+	if self:Stack() == 0 then
 		return 0
 	end
 	return Ability.Remains(self)
+end
+
+function Tempest.buff:Stack()
+	local stack = Ability.Stack(self)
+	if Tempest:Casting() then
+		stack = stack - 1
+	end
+	return max(0, stack)
 end
 
 function Tempest.buff:ApplyAura()
@@ -2654,7 +2720,6 @@ end
 
 function HealingSurge:Free()
 	return (
-		(SurgingCurrents.known and SurgingCurrents:Up()) or
 		(NaturesSwiftness.known and NaturesSwiftness:Up()) or
 		(AncestralSwiftness.known and AncestralSwiftness:Up())
 	)
@@ -2683,6 +2748,89 @@ end
 
 function FuryOfTheStorms:Remains()
 	return Pet.GreaterLightningElemental:Remains()
+end
+
+function WindGust:Stack()
+	if not self.known or StormElemental:Down() then
+		return 0
+	end
+	local stack = Ability.Stack(self)
+	if (
+		LightningBolt:Casting() or
+		ChainLightning:Casting() or
+		Tempest:Casting()
+	) then
+		stack = stack + 1
+	end
+	return stack
+end
+
+function Icefury:Available(...)
+	return self.known and self.buff:Up()
+end
+
+function Icefury:React()
+	return self.buff:Remains()
+end
+
+FusionOfElements.activation_time = 0
+
+FusionOfElements.Fire.consumed = true
+FusionOfElements.Fire.consumed_by = {
+	[ElementalBlast] = true, -- Elemental
+	[FlameShock] = true, -- Volcanic
+	[LavaBurst] = true,
+}
+
+FusionOfElements.Nature.consumed = true
+FusionOfElements.Nature.consumed_by = {
+	[ChainLightning] = true,
+	[EarthShock] = true,
+	[Earthquake] = true,
+	[ElementalBlast] = true, -- Elemental
+	[FlameShock] = true, -- Volcanic
+	[LightningBolt] = true,
+	[Tempest] = true,
+}
+
+function FusionOfElements.Fire:Remains()
+	if self.consumed or (Player.cast.ability and self.consumed_by[Player.cast.ability]) then
+		return 0
+	end
+	return max(0, self:Duration() - (Player.time - FusionOfElements.activation_time) - Player.execute_remains)
+end
+FusionOfElements.Nature.Remains = FusionOfElements.Fire.Remains
+
+function FusionOfElements:CastSuccess(dstGUID, ability)
+	if ability == Icefury.Dmg then
+		self.activation_time = Player.time
+		self.Fire.consumed = false
+		self.Nature.consumed = false
+		return
+	end
+	if (
+		self.activation_time == 0 or
+		(self.Fire.consumed and self.Nature.consumed) or
+		not (self.Fire.consumed_by[ability] or self.Nature.consumed_by[ability])
+	) then
+		return
+	end
+	if Player.time > (self.activation_time + self:Duration()) then
+		self.activation_time = 0
+		self.Fire.consumed = true
+		self.Nature.consumed = true
+		return -- Fusion of Elements expired
+	end
+	if self.Fire.consumed_by[ability] and not self.Fire.consumed then
+		self.Fire.consumed = true
+	end
+	if self.Nature.consumed_by[ability] and not self.Nature.consumed then
+		self.Nature.consumed = true
+	end
+	if self.Fire.consumed and self.Nature.consumed then
+		self.activation_time = 0
+		-- Elemental Blast is fired off at dstGUID
+	end
 end
 
 -- End Ability Modifications
@@ -2724,7 +2872,7 @@ APL[SPEC.NONE].Main = function(self)
 end
 
 APL[SPEC.ELEMENTAL].Main = function(self)
-	self.cds_active = (AscendanceFlame.known and AscendanceFlame:Up()) or (FireElemental.known and FireElemental:Up()) or (StormElemental.known and StormElemental:Up())
+	self.cds_active = Player.major_cd_remains > 6 or (FireElemental.known and FireElemental:Up()) or (StormElemental.known and StormElemental:Up())
 	self.use_cds = Opt.cooldown and (self.cds_active or Target.boss or Target.player or (not Opt.boss_only and Target.timeToDie > Opt.cd_ttd))
 	if Player.health.pct < Opt.heal then
 		if HealingSurge:Usable() and HealingSurge:Free() then
@@ -2774,8 +2922,6 @@ actions.precombat+=/stormkeeper
 			UseExtra(EarthShield)
 		elseif Player.health.pct < 90 and HealingStreamTotem:Usable() and Player:UnderAttack() and HealingStreamTotem:Down() then
 			UseExtra(HealingStreamTotem)
-		elseif self.use_cds and Player.health.pct < Opt.heal and AncestralGuidance:Usable() then
-			UseExtra(AncestralGuidance)
 		elseif Player.moving and SpiritwalkersGrace:Usable() then
 			UseExtra(SpiritwalkersGrace)
 		end
@@ -2803,7 +2949,7 @@ actions+=/run_action_list,name=single_target
 	if self.use_cds then
 		if Opt.trinket and (
 			self.cds_active or
-			(Target.boss and (Target.timeToDie < 22 or (Target.timeToDie < 45 and ((Stormkeeper.known and Stormkeeper:Ready(5)) or (AscendanceFlame.known and AscendanceFlame:Ready(5))))))
+			(Target.boss and (Target.timeToDie < 22 or (Target.timeToDie < 45 and ((Stormkeeper.known and Stormkeeper:Ready(5)) or (Ascendance.known and Ascendance:Ready(5))))))
 		) then
 			if Trinket1:Usable() then
 				UseCooldown(Trinket1)
@@ -2827,7 +2973,7 @@ actions.precombat+=/variable,name=mael_cap,value=100+50*talent.swelling_maelstro
 actions.precombat+=/variable,name=trinket_1_buffs,value=(trinket.1.has_use_buff|trinket.1.is.funhouse_lens)
 actions.precombat+=/variable,name=trinket_2_buffs,value=(trinket.2.has_use_buff|trinket.2.is.funhouse_lens)
 ]]
-	self.mael_cap = 100 + (SwellingMaelstrom.known and 50 or 0) + (PrimordialCapacity.known and 25 or 0)
+
 end
 
 APL[SPEC.ELEMENTAL].aoe = function(self)
@@ -2869,7 +3015,7 @@ actions.aoe+=/frost_shock,moving=1
 		if FireElemental:Usable() then
 			UseCooldown(FireElemental)
 		end
-		if StormElemental:Usable() and (not EchoOfTheElementals.known or StormElemental:Down()) and AncestralWisdom:Down() then
+		if StormElemental:Usable() and (not EchoOfTheElementals.known or StormElemental:Down()) and (not AncestralWisdom.known or AncestralWisdom:Down()) then
 			UseCooldown(StormElemental)
 		end
 		if Stormkeeper:Usable() and Stormkeeper:Down() and (
@@ -2886,20 +3032,20 @@ actions.aoe+=/frost_shock,moving=1
 			UseCooldown(TotemicRecall)
 		end
 	end
-	if FlameShock:Usable() and FlameShock:Ticking() == 0 and ((self.use_cds and PrimordialWave.known and PrimordialWave:Ready(Player.gcd)) or Player.enemies <= 3) and (not self.use_cds or not AscendanceFlame:Ready(10)) then
+	if FlameShock:Usable() and FlameShock:Ticking() == 0 and ((self.use_cds and PrimordialWave.known and PrimordialWave:Ready(Player.gcd)) or Player.enemies <= 3) and (not self.use_cds or not Ascendance.known or not Ascendance:Ready(10)) then
 		return FlameShock
 	end
 	if self.use_cds then
 		if PrimordialWave:Usable() and (
 			(FlameShock:Ticking() <= min(Player.enemies, 6)) or
-			((not LiquidMagmaTotem.known or not LiquidMagmaTotem:Ready(15)) and not AscendanceFlame:Ready(15))
+			((not LiquidMagmaTotem.known or not LiquidMagmaTotem:Ready(15)) and (not Ascendance.known or not Ascendance:Ready(15)))
 		) then
 			UseCooldown(PrimordialWave)
 		end
 		if AncestralSwiftness:Usable() and AncestralSwiftness:Down() then
 			UseCooldown(AncestralSwiftness)
 		end
-		if AscendanceFlame:Usable() and AscendanceFlame:Down() and (
+		if Ascendance:Usable() and Player.major_cd_remains == 0 and (
 			not FirstAscendant.known or
 			(Target.boss and not between(Target.timeToDie, 80, 200)) or
 			true
@@ -2907,7 +3053,7 @@ actions.aoe+=/frost_shock,moving=1
 			not FuryOfTheStorms.known or
 			FuryOfTheStorms:Up()
 		)then
-			UseCooldown(AscendanceFlame)
+			UseCooldown(Ascendance)
 		end
 	end
 	if Tempest:Usable() and (
@@ -2917,17 +3063,17 @@ actions.aoe+=/frost_shock,moving=1
 		return Tempest
 	end
 	if SurgeOfPower.known then
-		if Stormkeeper.known and LightningBolt:Usable() and Player.enemies < 3 and Stormkeeper:Up() and SurgeOfPower:Up() then
+		if LightningBolt:Usable() and Player.enemies < 3 and Stormkeeper:Up() and SurgeOfPower:Up() then
 			return LightningBolt
 		end
 		if ChainLightning:Usable() and Player.enemies <= 6 and SurgeOfPower:Up() then
 			return ChainLightning
 		end
 	elseif StormFrenzy.known then
-		if LightningBolt:Usable() and Player.enemies < 3 and Stormkeeper:Up() and StormFrenzy:Stack() >= 2 and (not CallOfTheAncestors.known or CallOfTheAncestors:Down()) and Player.maelstrom.current < (self.mael_cap - (15 + (Stormkeeper:Up() and math.pow(ChainLightning:Targets(), 2) or 0))) then
+		if LightningBolt:Usable() and Player.enemies < 3 and Stormkeeper:Up() and StormFrenzy:Capped() and (not CallOfTheAncestors.known or CallOfTheAncestors:Down()) and Player.maelstrom.deficit >= (15 + (Stormkeeper:Up() and math.pow(ChainLightning:Targets(), 2) or 0)) then
 			return LightningBolt
 		end
-		if ChainLightning:Usable() and Player.enemies <= 6 and StormFrenzy:Stack() >= 2 and Player.maelstrom.current < (self.mael_cap - (15 + (Stormkeeper:Up() and math.pow(ChainLightning:Targets(), 2) or 0))) then
+		if ChainLightning:Usable() and Player.enemies <= 6 and StormFrenzy:Capped() and Player.maelstrom.deficit >= (15 + (Stormkeeper:Up() and math.pow(ChainLightning:Targets(), 2) or 0)) then
 			return ChainLightning
 		end
 	end
@@ -2938,45 +3084,45 @@ actions.aoe+=/frost_shock,moving=1
 		(EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up()) or
 		(not EchoesOfGreatSundering.known and (not ElementalBlast.known or Player.enemies > (Tempest.known and 4 or 1)))
 	) and (
-		Player.maelstrom.current > (self.mael_cap - (10 * (ChainLightning:Targets() + 1))) or
+		Player.maelstrom.deficit <= (10 * (ChainLightning:Targets() + 1)) or
 		MasterOfTheElements:Up() or
-		(AscendanceFlame:Up() and AscendanceFlame:Remains() < 3) or
+		between(Player.major_cd_remains, 0.01, 3) or
 		(Target.boss and Target.timeToDie < 5)
 	) and (
 		(PrimordialWave.known and not PrimordialWave:Ready(8)) or
 		not (AncestralSwiftness.known and Player.set_bonus.tww3 >= 4) or
-		Player.maelstrom.current > (self.mael_cup - 20)
+		Player.maelstrom.deficit <= 20
 	) then
 		return Earthquake
 	end
 	if ElementalBlast:Usable() and (
-		Player.maelstrom.current > (self.mael_cap - (10 * (ChainLightning:Targets() + 1))) or
+		Player.maelstrom.deficit <= (10 * (ChainLightning:Targets() + 1)) or
 		MasterOfTheElements:Up() or
-		(AscendanceFlame:Up() and AscendanceFlame:Remains() < 3) or
+		between(Player.major_cd_remains, 0.01, 3) or
 		(Target.boss and Target.timeToDie < 5)
 	) and (
 		(PrimordialWave.known and not PrimordialWave:Ready(8)) or
 		not (AncestralSwiftness.known and Player.set_bonus.tww3 >= 4) or
-		Player.maelstrom.current > (self.mael_cup - 20)
+		Player.maelstrom.deficit <= 20
 	) then
 		return ElementalBlast
 	end
 	if EarthShock:Usable() and (
-		Player.maelstrom.current > (self.mael_cap - (10 * (ChainLightning:Targets() + 1))) or
+		Player.maelstrom.deficit <= (10 * (ChainLightning:Targets() + 1)) or
 		MasterOfTheElements:Up() or
-		(AscendanceFlame:Up() and AscendanceFlame:Remains() < 3) or
+		between(Player.major_cd_remains, 0.01, 3) or
 		(Target.boss and Target.timeToDie < 5)
 	) and (
 		(PrimordialWave.known and not PrimordialWave:Ready(8)) or
 		not (AncestralSwiftness.known and Player.set_bonus.tww3 >= 4) or
-		Player.maelstrom.current > (self.mael_cup - 20)
+		Player.maelstrom.deficit <= 20
 	) then
 		return EarthShock
 	end
 	if LightningRod.known then
 		if Earthquake:Usable() and LightningRod:Ticking() < Player.enemies and (
 			not SurgeOfPower.known or
-			(Stormkeeper.known and Stormkeeper:Up()) or
+			Stormkeeper:Up() or
 			Tempest:Available()
 		) and (
 			(EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up()) or
@@ -2986,14 +3132,14 @@ actions.aoe+=/frost_shock,moving=1
 		end
 		if ElementalBlast:Usable() and LightningRod:Ticking() < Player.enemies and (
 			not SurgeOfPower.known or
-			(Stormkeeper.known and Stormkeeper:Up()) or
+			Stormkeeper:Up() or
 			Tempest:Available()
 		) then
 			return ElementalBlast
 		end
 		if EarthShock:Usable() and LightningRod:Ticking() < Player.enemies and (
 			not SurgeOfPower.known or
-			(Stormkeeper.known and Stormkeeper:Up()) or
+			Stormkeeper:Up() or
 			Tempest:Available()
 		) then
 			return EarthShock
@@ -3010,7 +3156,7 @@ actions.aoe+=/frost_shock,moving=1
 		Player.enemies <= 2 or
 		(MasterOfTheElements.known and Player.enemies <= 3 and (
 			LavaSurge:Up() or
-			(CallOfTheAncesors.known and not LightningRod.known and (Stormkeeper:Up() or Tempest:Available() or Player.maelstrom.current > (82 - (EyeOfTheStorm.known and 10 or 0)) or (Player.maelstrom.current > (52 - (EyeOfTheStorm.known and 5 or 0)) and (not ElementalBlast.known or (EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up())))))
+			(CallOfTheAncestors.known and not LightningRod.known and (Stormkeeper:Up() or Tempest:Available() or Player.maelstrom.current > (82 - (EyeOfTheStorm.known and 10 or 0)) or (Player.maelstrom.current > (52 - (EyeOfTheStorm.known and 5 or 0)) and (not ElementalBlast.known or (EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up())))))
 		))
 	) then
 		return LavaBurst
@@ -3038,19 +3184,19 @@ actions.aoe+=/frost_shock,moving=1
 			return EarthShock
 		end
 	end
-	if FrostShock:Usable() and Icefury.Dmg:Up() and AscendanceFlame:Down() and Stormkeeper:Down() and (CallOfTheAncestors.known or Player.enemies <= 3) then
+	if FrostShock:Usable() and Icefury.Dmg:Up() and Player.major_cd_remains == 0 and Stormkeeper:Down() and (CallOfTheAncestors.known or Player.enemies <= 3) then
 		return FrostShock
 	end
-	if ChainLightning:Usable() then
-		return ChainLightning
-	end
-	if Player.moving then
+	if Player.moving and SpiritwalkersGrace:Down() then
 		if FlameShock:Usable() then
 			return FlameShock
 		end
 		if FrostShock:Usable() then
 			return FrostShock
 		end
+	end
+	if ChainLightning:Usable() then
+		return ChainLightning
 	end
 end
 
@@ -3090,7 +3236,7 @@ actions.single_target+=/frost_shock,moving=1
 		if FireElemental:Usable() then
 			UseCooldown(FireElemental)
 		end
-		if StormElemental:Usable() and (not EchoOfTheElementals.known or StormElemental:Down()) and AncestralWisdom:Down() then
+		if StormElemental:Usable() and (not EchoOfTheElementals.known or StormElemental:Down()) and (not AncestralWisdom.known or AncestralWisdom:Down()) then
 			UseCooldown(StormElemental)
 		end
 		if Stormkeeper:Usable() and Stormkeeper:Down() and (
@@ -3101,13 +3247,10 @@ actions.single_target+=/frost_shock,moving=1
 			UseCooldown(Stormkeeper)
 		end
 		if LiquidMagmaTotem:Usable() and MasterOfTheElements:Down() and (not SurgeOfPower.known or SurgeOfPower:Down()) and (
-			FlameShock:Down() or
-			(FlameShock:Refreshable() and AscendanceFlame:Ready(Player.gcd))
+			(not (AncestralSwiftness.known and Player.set_bonus.tww3 >= 2) and FlameShock:Down()) or
+			(Ascendance.known and FlameShock:Refreshable() and Ascendance:Ready(Player.gcd))
 		) then
 			UseCooldown(LiquidMagmaTotem)
-		end
-		if TotemicRecall:Usable() and not LiquidMagmaTotem:Ready(15) and FlameShock:Ticking() < (min(6, Player.enemies) - 2) then
-			UseCooldown(TotemicRecall)
 		end
 	end
 	if FlameShock:Usable() and FlameShock:Down() and MasterOfTheElements:Down() and (not SurgeOfPower.known or SurgeOfPower:Down()) then
@@ -3120,123 +3263,101 @@ actions.single_target+=/frost_shock,moving=1
 		if AncestralSwiftness:Usable() and AncestralSwiftness:Down() then
 			UseCooldown(AncestralSwiftness)
 		end
-		if AscendanceFlame:Usable() and AscendanceFlame:Down() and (
+		if Ascendance:Usable() and Player.major_cd_remains == 0 and (
 			not FirstAscendant.known or
 			(Target.boss and not between(Target.timeToDie, 80, 200)) or
 			true
 		) and (
 			not FuryOfTheStorms.known or
 			FuryOfTheStorms:Up()
-		)then
-			UseCooldown(AscendanceFlame)
-		end
-	end
-	if Tempest:Usable() and (not ArcDischarge.known or ArcDischarge:Down()) then
-		return Tempest
-	end
-	if Stormkeeper:Up() then
-		if SurgeOfPower.known then
-			if LightningBolt:Usable() and SurgeOfPower:Up() then
-				return LightningBolt
-			end
-		else
-			if MasterOfTheElements.known and LavaBurst:Usable() and MasterOfTheElements:Down() then
-				return LavaBurst
-			end
-			if LightningBolt:Usable() and (not MasterOfTheElements.known or MasterOfTheElements:Up()) then
-				return LightningBolt
-			end
-		end
-	end
-	if EchoChamber.known and LightningBolt:Usable() and SurgeOfPower:Up() and AscendanceFlame:Down() then
-		return LightningBolt
-	end
-	if self.use_cds and AscendanceFlame:Usable() and AscendanceFlame:Down() and LavaBurst:ChargesFractional() < 1.0 then
-		UseCooldown(AscendanceFlame)
-	end
-	if LavaBurst:Usable() and (
-		(FireElemental.known and LavaSurge:Up())
-	) then
-		return LavaBurst
-	end
-	if FireElemental.known then
-		if Earthquake:Usable() and MasterOfTheElements:Up() and (FusionOfElements.Nature:Up() or Player.maelstrom.deficit < 15 or AscendanceFlame:Remains() > 9 or AscendanceFlame:Down()) and (
-			(Player.enemies > 1 and not EchoesOfGreatSundering.known and not ElementalBlast.known) or
-			(EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up())
+		) and (
+			not PrimordialWave.known or
+			not PrimordialWave:Ready(25)
 		) then
-			return Earthquake
-		end
-		if ElementalBlast:Usable() and MasterOfTheElements:Up() and (FusionOfElements.Nature:Up() or FusionOfElements.Fire:Up() or Player.maelstrom.deficit < 15 or AscendanceFlame:Remains() > 6 or AscendanceFlame:Down()) then
-			return ElementalBlast
-		end
-		if EarthShock:Usable() and MasterOfTheElements:Up() and (FusionOfElements.Nature:Up() or Player.maelstrom.deficit < 15 or AscendanceFlame:Remains() > 9 or AscendanceFlame:Down()) then
-			return EarthShock
+			UseCooldown(Ascendance)
 		end
 	end
-	if StormElemental.known then
-		if Earthquake:Usable() and (Stormkeeper:Up() or (SurgeOfPower.known and not LiquidMagmaTotem.known and PrimordialWave.known and PrimordialWave:Ready(Player.gcd))) and (
-			(Player.enemies > 1 and not EchoesOfGreatSundering.known and not ElementalBlast.known) or
-			(EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up())
-		) then
-			return Earthquake
+	if SurgeOfPower.known then
+		if Tempest:Usable() and SurgeOfPower:Up() then
+			return Tempest
 		end
-		if ElementalBlast:Usable() and Stormkeeper:Up() then
-			return ElementalBlast
+		if LightningBolt:Usable() and SurgeOfPower:Up() then
+			return Tempest
 		end
-		if EarthShock:Usable() and (
-			(Player.enemies == 1 and (Stormkeeper:Up() or (not Stormkeeper:Ready(10) and (MasterOfTheElements:Up() or LightningRod:Ticking() == 0)))) or
-			(Player.enemies > 1 and EchoesOfGreatSundering.known and EchoesOfGreatSundering:Down() and (Stormkeeper:Up() or (SurgeOfPower.known and not LiquidMagmaTotem.known and PrimordialWave.known and PrimordialWave:Ready(Player.gcd))))
-		) then
-			return EarthShock
+	elseif StormFrenzy.known then
+		if Tempest:Usable() and StormFrenzy:Capped() then
+			return Tempest
 		end
 	end
-	if Icefury:Usable() and not (FusionOfElements.Nature:Up() or FusionOfElements.Fire:Up()) and Icefury:Stack() >= 2 and (FusionOfElements.known or AscendanceFlame:Down()) then
-		return Icefury
-	end
-	if LavaBurst:Usable() and (
-		AscendanceFlame:Up() or
-		(FireElemental.known and MasterOfTheElements.known and MasterOfTheElements:Down()) or
-		(EarthShock.known and ElementalReverb.known and Stormkeeper:Up() and Player:TimeInCombat() < 10)
+	if LiquidMagmaTotem:Usable() and MasterOfTheElements:Down() and (
+		(not CallOfTheAncestors.known and FlameShock:Refreshable()) or
+		(
+			Player.major_cd_remains == 0 and
+			(not AncestralSwiftness.known or AncestralSwiftness:Down()) and
+			(not PrimordialWave.known or not PrimordialWave:Ready(24)) and
+			Player.maelstrom.deficit <= 10
+		)
 	) then
-		return LavaBurst
+		UseCooldown(LiquidMagmaTotem)
 	end
-	if Earthquake:Usable() and (Player.maelstrom.deficit < 35 or Target.timeToDie < 5) and (
-		(Player.enemies > 1 and not EchoesOfGreatSundering.known and not ElementalBlast.known) or
-		(EchoesOfGreatSundering.known and EchoesOfGreatSundering:Up())
+	if EruptingLava.known and FlameShock:Usable() and FlameShock:Refreshable() and MasterOfTheElements:Down() and (not SurgeOfPower.known or SurgeOfPower:Down()) then
+		return FlameShock
+	end
+	if ElementalBlast:Usable() and (
+		Player.maelstrom.deficit <= 15 or
+		MasterOfTheElements:Up() or
+		(AncestralWisdom.known and between(AncestralWisdom:Remains(), 0.01, 2))
 	) then
-		return Earthquake
-	end
-	if ElementalBlast:Usable() and (Player.maelstrom.deficit < 15 or Target.timeToDie < 5) then
 		return ElementalBlast
 	end
-	if EarthShock:Usable() and (Player.maelstrom.deficit < 15 or Target.timeToDie < 5) then
+	if EarthShock:Usable() and (
+		Player.maelstrom.deficit <= 15 or
+		MasterOfTheElements:Up() or
+		(AncestralWisdom.known and between(AncestralWisdom:Remains(), 0.01, 2))
+	) then
 		return EarthShock
 	end
-	if SurgeOfPower.known and LightningBolt:Usable() and SurgeOfPower:Up() then
-		return LightningBolt
-	end
-	if Icefury:Usable() and not (FusionOfElements.Nature:Up() or FusionOfElements.Fire:Up()) then
+	if Icefury:Usable() and (
+		not FusionOfElements.known or
+		not (FusionOfElements.Nature:Up() or FusionOfElements.Fire:Up())
+	) then
 		return Icefury
 	end
-	if FrostShock:Usable() and Icefury.Dmg:Up() and (Player.enemies == 1 or (SurgeOfPower.known and Stormkeeper:Up())) then
-		return FrostShock
-	end
-	if ChainLightning:Usable() and Player.enemies > 1 and PowerOfTheMaelstrom:Up() and Stormkeeper:Down() then
-		return ChainLightning
-	end
-	if LightningBolt:Usable() and PowerOfTheMaelstrom:Up() and Stormkeeper:Down() then
-		return LightningBolt
-	end
-	if DeeplyRootedElements.known and LavaBurst:Usable() then
+	if LavaBurst:Usable() and MasterOfTheElements:Down() and (
+		LavaSurge:Up() or
+		Tempest:Available() or
+		Stormkeeper:Up() or
+		LavaBurst:ChargesFractional() > 1.8 or
+		Player.maelstrom.deficit <= 30 or
+		(Player.maelstrom.current > (52 - (EyeOfTheStorm.known and (ElementalBlast.known and 10 or 5) or 0) + (ElementalBlast.known and 30 or 0)) and (
+			not PrimordialWave.known or
+			not AncestralWisdom.known or
+			not PrimordialWave:Ready(8)
+		))
+	) then
 		return LavaBurst
 	end
-	if ChainLightning:Usable() and Player.enemies > 1 and Stormkeeper:Down() then
-		return ChainLightning
+	if SurgeOfPower.known and not MasterOfTheElements.known then
+		if EchoesOfGreatSundering.known and Earthquake:Usable() and EchoesOfGreatSundering:Up() and (Tempest:Available() or Stormkeeper:Up()) then
+			return Earthquake
+		end
+		if ElementalBlast:Usable() and (Tempest:Available() or Stormkeeper:Up()) then
+			return ElementalBlast
+		end
+		if EarthShock:Usable() and (Tempest:Available() or Stormkeeper:Up()) then
+			return EarthShock
+		end
 	end
-	if LightningBolt:Usable() then
+	if Tempest:Usable() then
+		return Tempest
+	end
+	if StormElemental.known and LightningBolt:Usable() and StormElemental:Up() and not WindGust:Capped() then
 		return LightningBolt
 	end
-	if Player.moving then
+	if CallOfTheAncestors.known and FrostShock:Usable() and Player.major_cd_remains == 0 and Icefury.Dmg:Up() and Stormkeeper:Down() then
+		return FrostShock
+	end
+	if Player.moving and SpiritwalkersGrace:Down() then
 		if FlameShock:Usable() then
 			return FlameShock
 		end
@@ -3244,10 +3365,13 @@ actions.single_target+=/frost_shock,moving=1
 			return FrostShock
 		end
 	end
+	if LightningBolt:Usable() then
+		return LightningBolt
+	end
 end
 
 APL[SPEC.ENHANCEMENT].Main = function(self)
-	self.cds_active = (AscendanceAir.known and AscendanceAir:Up()) or (FeralSpirit.known and FeralSpirit:Up()) or (DoomWinds.known and DoomWinds:Up())
+	self.cds_active = Player.major_cd_remains > 6 or (FeralSpirit.known and FeralSpirit:Up()) or (DoomWinds.known and DoomWinds:Up())
 	self.use_cds = Opt.cooldown and (self.cds_active or Target.boss or Target.player or (not Opt.boss_only and Target.timeToDie > Opt.cd_ttd))
 	if Player.health.pct < Opt.heal then
 		if HealingSurge:Usable() and (MaelstromWeapon.current >= 5 or HealingSurge:Free()) then
@@ -3293,8 +3417,6 @@ actions.precombat+=/snapshot_stats
 			UseExtra(EarthShield)
 		elseif Player.health.pct < 90 and HealingStreamTotem:Usable() and Player:UnderAttack() and HealingStreamTotem:Down() then
 			UseExtra(HealingStreamTotem)
-		elseif self.use_cds and Player.health.pct < Opt.heal and AncestralGuidance:Usable() then
-			UseExtra(AncestralGuidance)
 		end
 	end
 --[[
@@ -3327,7 +3449,7 @@ actions.precombat+=/variable,name=target_nature_mod,value=(1+debuff.chaos_brand.
 actions.precombat+=/variable,name=expected_lb_funnel,value=action.lightning_bolt.damage*(1+debuff.lightning_rod.up*variable.target_nature_mod*(1+buff.primordial_wave.up*active_dot.flame_shock*buff.primordial_wave.value)*debuff.lightning_rod.value)
 actions.precombat+=/variable,name=expected_cl_funnel,value=action.chain_lightning.damage*(1+debuff.lightning_rod.up*variable.target_nature_mod*(active_enemies>?(3+2*talent.crashing_storms.enabled))*debuff.lightning_rod.value)
 ]]
-	self.minTalentedCdRemains = min(FeralSpirit.known and (FeralSpirit:Cooldown() / (WitchDoctorsAncestry.known and 4 or 1)) or 1000, DoomWinds.known and DoomWinds:Cooldown() or 1000, AscendanceAir.known and AscendanceAir:Cooldown() or 1000)
+	self.minTalentedCdRemains = min(FeralSpirit.known and (FeralSpirit:Cooldown() / (WitchDoctorsAncestry.known and 4 or 1)) or 1000, DoomWinds.known and DoomWinds:Cooldown() or 1000, Ascendance.known and Ascendance:Cooldown() or 1000)
 	self.targetNatureMod = (1 + (ChaosBrand:Up() and ChaosBrand.value or 0)) * (1 + (HuntersMark:Up() and Target.health.pct >= 80 and HuntersMark.value or 0))
 	self.expectedLbFunnel = LightningBolt:Damage() * (1 + (LightningRod:Up() and (self.targetNatureMod * LightningRod.value) or 0))
 	self.expectedClFunnel = ChainLightning:Damage() * (1 + (LightningRod:Up() and (self.targetNatureMod * ChainLightning:Targets() * LightningRod.value) or 0))
@@ -3352,7 +3474,7 @@ actions.cds+=/feral_spirit,if=talent.elemental_spirits.enabled|(talent.alpha_wol
 actions.cds+=/surging_totem
 actions.cds+=/ascendance,if=dot.flame_shock.ticking&((ti_lightning_bolt&active_enemies=1&raid_event.adds.in>=action.ascendance.cooldown%2)|(ti_chain_lightning&active_enemies>1))
 ]]
-	if Opt.trinket and (self.cds_active or (not AscendanceAir.known and not FeralSpirit.known and not DoomWinds.known)) then
+	if Opt.trinket and (self.cds_active or (not Ascendance.known and not FeralSpirit.known and not DoomWinds.known)) then
 		if Trinket1:Usable() then
 			return UseCooldown(Trinket1)
 		elseif Trinket2:Usable() then
@@ -3365,12 +3487,12 @@ actions.cds+=/ascendance,if=dot.flame_shock.ticking&((ti_lightning_bolt&active_e
 	if SurgingTotem:Usable() then
 		return UseCooldown(SurgingTotem)
 	end
-	if AscendanceAir:Usable() and AscendanceAir:Down() and FlameShock:Up() and (
+	if Ascendance:Usable() and Player.major_cd_remains == 0 and FlameShock:Up() and (
 		not ThorimsInvocation.known or
 		(ThorimsInvocation:LightningBolt() and Player.enemies == 1) or
 		(ThorimsInvocation:ChainLightning() and Player.enemies > 1)
 	) then
-		return UseCooldown(AscendanceAir)
+		return UseCooldown(Ascendance)
 	end
 end
 
@@ -3417,7 +3539,7 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 		MaelstromWeapon.deficit == 0 or
 		(MaelstromWeapon.current >= 5 and (
 			Tempest.buff:Remains() < (Player.gcd * 3) or
-			(Tempest.buff:Stack() >= Tempest.buff:MaxStack() and (Tempest:Maelstrom() > 30 or AwakeningStorms.buff:Stack() >= 2))
+			(Tempest.buff:Capped() and (Tempest:Maelstrom() > 30 or AwakeningStorms.buff:Stack() >= 2))
 		))
 	) then
 		return Tempest
@@ -3524,7 +3646,7 @@ actions.aoe+=/frost_shock,if=!talent.hailstorm.enabled
 	end
 	if Stormstrike:Usable() and CrashLightning.buff:Up() and (
 		DeeplyRootedElements.known or
-		(ConvergingStorms and ConvergingStorms:Stack() >= ConvergingStorms:MaxStack())
+		(ConvergingStorms and ConvergingStorms:Capped())
 	) then
 		return Stormstrike
 	end
@@ -3617,12 +3739,12 @@ actions.funnel+=/chain_lightning,if=buff.maelstrom_weapon.stack>=5
 actions.funnel+=/flame_shock,if=!ticking
 actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 ]]
-	if self.use_cds and AscendanceAir:Usable() then
-		return AscendanceAir
+	if self.use_cds and Ascendance:Usable() then
+		return Ascendance
 	end
 	if Windstrike:Usable() and (
 		(ThorimsInvocation.known and MaelstromWeapon.current > 1) or
-		(ConvergingStorms.known and ConvergingStorms:Stack() >= ConvergingStorms:MaxStack())
+		(ConvergingStorms.known and ConvergingStorms:Capped())
 	) then
 		return Windstrike
 	end
@@ -3630,7 +3752,7 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 		MaelstromWeapon.deficit == 0 or
 		(MaelstromWeapon.current >= 5 and (
 			Tempest.buff:Remains() < (Player.gcd * 3) or
-			(Tempest.buff:Stack() >= Tempest.buff:MaxStack() and (Tempest:Maelstrom() > 30 or AwakeningStorms.buff:Stack() >= 2))
+			(Tempest.buff:Capped() and (Tempest:Maelstrom() > 30 or AwakeningStorms.buff:Stack() >= 2))
 		))
 	) then
 		return Tempest
@@ -3658,7 +3780,7 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 	end
 	if LavaLash:Usable() and (
 		(MoltenAssault.known and FlameShock:Up() and not FlameShock:Max()) or
-		(AshenCatalyst.known and AshenCatalyst:Stack() >= AshenCatalyst:MaxStack())
+		(AshenCatalyst.known and AshenCatalyst:Capped())
 	) then
 		return LavaLash
 	end
@@ -3680,7 +3802,7 @@ actions.funnel+=/frost_shock,if=!talent.hailstorm.enabled
 			UseCooldown(DoomWinds)
 		end
 	end
-	if ConvergingStorms.known and Stormstrike:Usable() and ConvergingStorms:Stack() >= ConvergingStorms:MaxStack() then
+	if ConvergingStorms.known and Stormstrike:Usable() and ConvergingStorms:Capped() then
 		return Stormstrike
 	end
 	if MaelstromWeapon.deficit == 0 then
@@ -3855,7 +3977,7 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 		UseCooldown(FeralSpirit)
 	end
 	if MaelstromWeapon.current >= 5 then
-		if Tempest:Usable() and ((MaelstromWeapon.deficit == 0 and Tempest.buff:Stack() >= Tempest.buff:MaxStack()) or Tempest.buff:Remains() < (Player.gcd * 3)) then
+		if Tempest:Usable() and ((MaelstromWeapon.deficit == 0 and Tempest.buff:Capped()) or Tempest.buff:Remains() < (Player.gcd * 3)) then
 			return Tempest
 		end
 		if ElementalSpirits.known and ElementalBlast:Usable() and FeralSpirit.active >= 2 and FeralSpirit:Remains() <= (Player.gcd * 2) then
@@ -3874,7 +3996,7 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if ThorimsInvocation.known and Windstrike:Usable() and MaelstromWeapon.current > 1 and ThorimsInvocation:LightningBolt() then
 		return Windstrike
 	end
-	if self.use_cds and Earthsurge.known and Sundering:Usable() and AscendanceAir:Up() and Pet.SurgingTotem:Up() then
+	if self.use_cds and Earthsurge.known and Sundering:Usable() and Player.major_cd_remains > 0 and Pet.SurgingTotem:Up() then
 		UseCooldown(Sundering)
 	end
 	if LashingFlames.known and FlameShock:Down() then
@@ -3901,7 +4023,7 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 		if Tempest.known and LightningBolt:Usable() and MaelstromWeapon.deficit <= (ElementalSpirits.known and ((Supercharge.known and 1 or 0) + (StaticAccumulation.known and 1 or 0)) or 0) then
 			return LightningBolt
 		end
-		if LightningBolt:Usable() and AscendanceAir:Up() and ThorimsInvocation:ChainLightning() and AscendanceAir:Remains() > (Windstrike:Cooldown() + Player.gcd) then
+		if LightningBolt:Usable() and Player.major_cd_remains > 0 and ThorimsInvocation:ChainLightning() and Player.major_cd_remains > (Windstrike:Cooldown() + Player.gcd) then
 			return LightningBolt
 		end
 	end
@@ -3945,7 +4067,7 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if AlphaWolf.known and CrashLightning:Usable() and FeralSpirit.active > 0 and AlphaWolf:MinRemains() == 0 then
 		return CrashLightning
 	end
-	if Hailstorm.known and SwirlingMaelstrom.known and FrostShock:Usable() and Hailstorm:Stack() >= 10 and IceStrike.buff:Up() and IceStrike.buff:Remains() < 3 then
+	if Hailstorm.known and SwirlingMaelstrom.known and FrostShock:Usable() and Hailstorm:Capped() and IceStrike.buff:Up() and IceStrike.buff:Remains() < 3 then
 		return FrostShock
 	end
 	if VoltaicBlaze:Usable() and FlameShock:Down() then
@@ -3978,7 +4100,7 @@ actions.single+=/lightning_bolt,if=buff.maelstrom_weapon.stack>=5&buff.primordia
 	if ElementalAssault.known and SwirlingMaelstrom.known and IceStrikeProc:Usable() then
 		return IceStrikeProc
 	end
-	if Hailstorm.known and SwirlingMaelstrom.known and FrostShock:Usable() and Hailstorm:Stack() >= 10 and IceStrike.buff:Up() then
+	if Hailstorm.known and SwirlingMaelstrom.known and FrostShock:Usable() and Hailstorm:Capped() and IceStrike.buff:Up() then
 		return FrostShock
 	end
 	if Tempest.known then
@@ -4569,6 +4691,9 @@ CombatEvent.SPELL = function(event, srcGUID, dstGUID, spellId, spellName, spellS
 
 	UI:UpdateCombatWithin(0.05)
 	if event == 'SPELL_CAST_SUCCESS' then
+		if FusionOfElements.known then
+			FusionOfElements:CastSuccess(dstGUID, ability)
+		end
 		return ability:CastSuccess(dstGUID)
 	elseif event == 'SPELL_CAST_START' then
 		return ability.CastStart and ability:CastStart(dstGUID)
@@ -4749,7 +4874,9 @@ function Events:PLAYER_EQUIPMENT_CHANGED()
 		end
 	end
 
-	Player.set_bonus.t33 = (Player:Equipped(212009) and 1 or 0) + (Player:Equipped(212010) and 1 or 0) + (Player:Equipped(212011) and 1 or 0) + (Player:Equipped(212012) and 1 or 0) + (Player:Equipped(212014) and 1 or 0)
+	Player.set_bonus.tww1 = (Player:Equipped(212009) and 1 or 0) + (Player:Equipped(212010) and 1 or 0) + (Player:Equipped(212011) and 1 or 0) + (Player:Equipped(212012) and 1 or 0) + (Player:Equipped(212014) and 1 or 0)
+	Player.set_bonus.tww2 = (Player:Equipped(229260) and 1 or 0) + (Player:Equipped(229261) and 1 or 0) + (Player:Equipped(229262) and 1 or 0) + (Player:Equipped(229263) and 1 or 0) + (Player:Equipped(229265) and 1 or 0)
+	Player.set_bonus.tww3 = (Player:Equipped(237635) and 1 or 0) + (Player:Equipped(237636) and 1 or 0) + (Player:Equipped(237637) and 1 or 0) + (Player:Equipped(237638) and 1 or 0) + (Player:Equipped(237640) and 1 or 0)
 
 	Player:ResetSwing(true, true)
 	Player:UpdateKnown()
