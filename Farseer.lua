@@ -1200,6 +1200,9 @@ LavaSurge.max_stack = 1
 local AscendanceFlame = Ability:Add(114050, true, true)
 AscendanceFlame.buff_duration = 15
 AscendanceFlame.cooldown_duration = 180
+AscendanceFlame.DRE = Ability:Add(1219480, true, true)
+AscendanceFlame.DRE.buff_duration = 15
+AscendanceFlame.DRE.cooldown_duration = 180
 local EarthShock = Ability:Add(8042, false, true)
 EarthShock.maelstrom_cost = 60
 local Earthquake = Ability:Add({61882, 462620}, false, true, 77478)
@@ -2458,6 +2461,10 @@ function StormElemental:Remains()
 	return max(Pet.GreaterStormElemental:Remains(), Pet.PrimalStormElemental:Remains())
 end
 
+function AscendanceFlame:Remains()
+	return max(Ability.Remains(self), self.DRE:Remains())
+end
+
 LightningRod.triggered_by = {}
 
 function LightningRod:Remains()
@@ -2948,8 +2955,14 @@ actions+=/run_action_list,name=single_target
 ]]
 	if self.use_cds then
 		if Opt.trinket and (
-			self.cds_active or
-			(Target.boss and (Target.timeToDie < 22 or (Target.timeToDie < 45 and ((Stormkeeper.known and Stormkeeper:Ready(5)) or (Ascendance.known and Ascendance:Ready(5))))))
+			Player.major_cd_remains > 12 or
+			(Target.boss and (
+				Target.timeToDie < 21 or
+				(Target.timeToDie < 45 and (
+					(Ascendance.known and Ascendance:Ready(5)) or
+					(Stormkeeper.known and Stormkeeper:Ready(5) and (not Ascendance.known or not Ascendance:Ready(15)))
+				))
+			))
 		) then
 			if Trinket1:Usable() then
 				UseCooldown(Trinket1)
@@ -3028,7 +3041,7 @@ actions.aoe+=/frost_shock,moving=1
 		if LiquidMagmaTotem:Usable() and (not PrimordialWave.known or PrimordialWave:Ready(Player.gcd * 5)) and FlameShock:Ticking() < (min(6, Player.enemies) - 2) then
 			UseCooldown(LiquidMagmaTotem)
 		end
-		if TotemicRecall:Usable() and not LiquidMagmaTotem:Ready(15) and FlameShock:Ticking() < (min(6, Player.enemies) - 2) then
+		if PrimordialWave.known and TotemicRecall:Usable() and Player.major_cd_remains == 0 and not LiquidMagmaTotem:Ready(15) and PrimordialWave:Ready(10) and FlameShock:Ticking() < (min(6, Player.enemies) - 2) then
 			UseCooldown(TotemicRecall)
 		end
 	end
@@ -3187,16 +3200,14 @@ actions.aoe+=/frost_shock,moving=1
 	if FrostShock:Usable() and Icefury.Dmg:Up() and Player.major_cd_remains == 0 and Stormkeeper:Down() and (CallOfTheAncestors.known or Player.enemies <= 3) then
 		return FrostShock
 	end
-	if Player.moving and SpiritwalkersGrace:Down() then
-		if FlameShock:Usable() then
-			return FlameShock
-		end
-		if FrostShock:Usable() then
-			return FrostShock
-		end
-	end
 	if ChainLightning:Usable() then
 		return ChainLightning
+	end
+	if FlameShock:Usable() then
+		return FlameShock
+	end
+	if FrostShock:Usable() then
+		return FrostShock
 	end
 end
 
@@ -3357,16 +3368,14 @@ actions.single_target+=/frost_shock,moving=1
 	if CallOfTheAncestors.known and FrostShock:Usable() and Player.major_cd_remains == 0 and Icefury.Dmg:Up() and Stormkeeper:Down() then
 		return FrostShock
 	end
-	if Player.moving and SpiritwalkersGrace:Down() then
-		if FlameShock:Usable() then
-			return FlameShock
-		end
-		if FrostShock:Usable() then
-			return FrostShock
-		end
-	end
 	if LightningBolt:Usable() then
 		return LightningBolt
+	end
+	if FlameShock:Usable() then
+		return FlameShock
+	end
+	if FrostShock:Usable() then
+		return FrostShock
 	end
 end
 
