@@ -1147,6 +1147,8 @@ local EchoOfTheElements = Ability:Add(333919, true, true)
 local ElementalOrbit = Ability:Add(383010, false, true)
 local EyeOfTheStorm = Ability:Add(381708, false, true)
 local FirstAscendant = Ability:Add(462440, false, true)
+local GustOfWind = Ability:Add(192063, true, true)
+GustOfWind.cooldown_duration = 20
 local Hex = Ability:Add(51514, false, true)
 Hex.buff_duration = 60
 Hex.cooldown_duration = 30
@@ -1162,6 +1164,10 @@ LavaBurst:AutoAoe(false)
 local NaturesSwiftness = Ability:Add(378081, true, true)
 NaturesSwiftness.buff_duration = 3600
 NaturesSwiftness.cooldown_duration = 60
+local PoisonCleansingTotem = Ability:Add(383013, true, true)
+PoisonCleansingTotem.mana_cost = 0.5
+PoisonCleansingTotem.buff_duration = 6
+PoisonCleansingTotem.cooldown_duration = 120
 local PrimordialWave = Ability:Add(375982, false, true)
 PrimordialWave.cooldown_duration = 30
 PrimordialWave.mana_cost = 0.6
@@ -2433,6 +2439,7 @@ end
 CapacitorTotem.Remains = TotemRemains
 HealingStreamTotem.Remains = TotemRemains
 LiquidMagmaTotem.Remains = TotemRemains
+PoisonCleansingTotem.Remains = TotemRemains
 SurgingTotem.Remains = TotemRemains
 
 local function WeaponEnchantRemains(self)
