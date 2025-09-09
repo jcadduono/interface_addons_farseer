@@ -1073,17 +1073,10 @@ FlameShock.target_cap = 6
 FlameShock.hasted_ticks = true
 FlameShock:AutoAoe(false, 'apply')
 FlameShock:Track()
-local FlametongueWeapon = Ability:Add(318038, true, true)
-FlametongueWeapon.enchant_id = 5400
 local FrostShock = Ability:Add(196840, false, true)
 FrostShock.buff_duration = 6
 FrostShock.mana_cost = 0.2
 local GhostWolf = Ability:Add(2645, true, true)
-local HealingStreamTotem = Ability:Add(5394, true, true, 5672)
-HealingStreamTotem.buff_duration = 15
-HealingStreamTotem.cooldown_duration = 30
-HealingStreamTotem.mana_cost = 5
-HealingStreamTotem.summon_count = 1
 local HealingSurge = Ability:Add(8004, true, true)
 HealingSurge.mana_cost = 10
 HealingSurge.consume_mw = true
@@ -1116,11 +1109,6 @@ Skyfury.mana_cost = 4
 local AstralShift = Ability:Add(108271, true, true)
 AstralShift.buff_duration = 12
 AstralShift.cooldown_duration = 120
-local CapacitorTotem = Ability:Add(192058, false, true)
-CapacitorTotem.buff_duration = 3
-CapacitorTotem.cooldown_duration = 60
-CapacitorTotem.mana_cost = 2
-CapacitorTotem.summon_count = 1
 local ChainHeal = Ability:Add(1064, true, true)
 ChainHeal.mana_cost = 15
 ChainHeal.consume_mw = true
@@ -1164,10 +1152,6 @@ LavaBurst:AutoAoe(false)
 local NaturesSwiftness = Ability:Add(378081, true, true)
 NaturesSwiftness.buff_duration = 3600
 NaturesSwiftness.cooldown_duration = 60
-local PoisonCleansingTotem = Ability:Add(383013, true, true)
-PoisonCleansingTotem.mana_cost = 0.5
-PoisonCleansingTotem.buff_duration = 6
-PoisonCleansingTotem.cooldown_duration = 120
 local PrimordialWave = Ability:Add(375982, false, true)
 PrimordialWave.cooldown_duration = 30
 PrimordialWave.mana_cost = 0.6
@@ -1271,12 +1255,6 @@ local LightningRod = Ability:Add(210689, true, true, 197209)
 LightningRod.buff_duration = 8
 LightningRod.value = 0.10
 LightningRod:Track()
-local LiquidMagmaTotem = Ability:Add(192222, false, true)
-LiquidMagmaTotem.buff_duration = 6
-LiquidMagmaTotem.cooldown_duration = 30
-LiquidMagmaTotem.mana_cost = 0.7
-LiquidMagmaTotem.summon_count = 1
-LiquidMagmaTotem:AutoAoe(false)
 local MagmaChamber = Ability:Add(381932, true, true, 381933)
 MagmaChamber.buff_duration = 21
 MagmaChamber.max_stack = 10
@@ -1303,9 +1281,6 @@ StormkeeperEle.max_stack = 3
 local SurgeOfPower = Ability:Add(262303, true, true, 285514)
 SurgeOfPower.buff_duration = 15
 local SwellingMaelstrom = Ability:Add(381707, false, true)
-local ThunderstrikeWard = Ability:Add(462757, true, true)
-ThunderstrikeWard.buff_duration = 3600
-ThunderstrikeWard.enchant_id = 7587
 ------ Procs
 local WindGust = Ability:Add(263806, true, true) -- Storm Elemental
 WindGust.max_stack = 4
@@ -1389,8 +1364,6 @@ local UnrulyWinds = Ability:Add(390288, false, true)
 local VoltaicBlaze = Ability:Add(470057, true, true, 470058)
 VoltaicBlaze.buff_duration = 20
 VoltaicBlaze.learn_spellId = 470053
-local WindfuryWeapon = Ability:Add(33757, true, true)
-WindfuryWeapon.enchant_id = 5401
 local Windstrike = Ability:Add(115356, false, true) -- Replaces Stormstrike during Ascendance (Air)
 Windstrike.cooldown_duration = 7.5
 Windstrike.hasted_cooldown = true
@@ -1453,14 +1426,47 @@ Tempest.buff.max_stack = 2
 local Earthsurge = Ability:Add(455590, false, true)
 local LivelyTotems = Ability:Add(445034, true, true, 458101)
 LivelyTotems.buff_duration = 8
-local SurgingTotem = Ability:Add(444995, false, true)
-SurgingTotem.buff_duration = 24
-SurgingTotem.cooldown_duration = 30
-SurgingTotem.mana_cost = 0.4
-SurgingTotem.summon_count = 1
 local TotemicRebound = Ability:Add(445025, true, true, 458269)
 TotemicRebound.buff_duration = 25
 TotemicRebound.max_stack = 10
+-- Totems
+local Totem = {}
+Totem.Capacitor = Ability:Add(192058, false, true)
+Totem.Capacitor.buff_duration = 3
+Totem.Capacitor.cooldown_duration = 60
+Totem.Capacitor.mana_cost = 2
+Totem.Capacitor.summon_count = 1
+Totem.HealingStream = Ability:Add(5394, true, true, 5672)
+Totem.HealingStream.buff_duration = 15
+Totem.HealingStream.cooldown_duration = 30
+Totem.HealingStream.mana_cost = 5
+Totem.HealingStream.summon_count = 1
+Totem.LiquidMagma = Ability:Add(192222, false, true)
+Totem.LiquidMagma.buff_duration = 6
+Totem.LiquidMagma.cooldown_duration = 30
+Totem.LiquidMagma.mana_cost = 0.7
+Totem.LiquidMagma.summon_count = 1
+Totem.LiquidMagma:AutoAoe(false)
+Totem.PoisonCleansing = Ability:Add(383013, true, true)
+Totem.PoisonCleansing.mana_cost = 0.5
+Totem.PoisonCleansing.buff_duration = 6
+Totem.PoisonCleansing.cooldown_duration = 120
+Totem.PoisonCleansing.tick_interval = 1.5
+Totem.PoisonCleansing.summon_count = 1
+Totem.Surging = Ability:Add(444995, false, true)
+Totem.Surging.buff_duration = 24
+Totem.Surging.cooldown_duration = 30
+Totem.Surging.mana_cost = 0.4
+Totem.Surging.summon_count = 1
+-- Temporary enhancements
+local Imbue = {}
+Imbue.ThunderstrikeWard = Ability:Add(462757, true, true)
+Imbue.ThunderstrikeWard.buff_duration = 3600
+Imbue.ThunderstrikeWard.enchant_id = 7587
+Imbue.WindfuryWeapon = Ability:Add(33757, true, true)
+Imbue.WindfuryWeapon.enchant_id = 5401
+Imbue.FlametongueWeapon = Ability:Add(318038, true, true)
+Imbue.FlametongueWeapon.enchant_id = 5400
 -- Tier set bonuses
 local AncestralWisdom = Ability:Add(1238279, true, true) -- TWW S3 4pc (Elemental - Farseer)
 AncestralWisdom.buff_duration = 8
@@ -1642,10 +1648,11 @@ Pet.SpiritWolf = SummonedPet:Add(29264, 15, FeralSpirit)
 Pet.ElementalSpiritWolf = SummonedPet:Add(100820, 15, ElementalSpirits)
 Pet.NatureSpiritWolf = SummonedPet:Add(212489, 15, RollingThunder)
 -- Totems
-Pet.CapacitorTotem = SummonedPet:Add(61245, 2, CapacitorTotem)
-Pet.HealingStreamTotem = SummonedPet:Add(3527, 15, HealingStreamTotem)
-Pet.LiquidMagmaTotem = SummonedPet:Add(97369, 5, LiquidMagmaTotem)
-Pet.SurgingTotem = SummonedPet:Add(225409, 24, SurgingTotem)
+Pet.CapacitorTotem = SummonedPet:Add(61245, 2, Totem.Capacitor)
+Pet.HealingStreamTotem = SummonedPet:Add(3527, 15, Totem.HealingStream)
+Pet.LiquidMagmaTotem = SummonedPet:Add(97369, 5, Totem.LiquidMagma)
+Pet.PoisonCleansingTotem = SummonedPet:Add(5923, 6, Totem.PoisonCleansing)
+Pet.SurgingTotem = SummonedPet:Add(225409, 24, Totem.Surging)
 -- End Summoned Pets
 
 -- Start Inventory Items
@@ -2423,38 +2430,40 @@ FlowOfPower.gain_increase = {
 	[LightningBolt] = 2,
 }
 
-local function TotemRemains(self)
-	local _, start, duration, icon
-	for i = 1, MAX_TOTEMS do
-		_, _, start, duration, icon = GetTotemInfo(i)
-		if icon and icon == (self.totem_icon or self.icon) then
-			return max(0, start + duration - Player.ctime - Player.execute_remains)
+do
+	local function TotemRemains(self)
+		local _, start, duration, icon
+		for i = 1, MAX_TOTEMS do
+			_, _, start, duration, icon = GetTotemInfo(i)
+			if icon and icon == (self.totem_icon or self.icon) then
+				return max(0, start + duration - Player.ctime - Player.execute_remains)
+			end
 		end
+		if (Player.time - self.last_used) < 1 then -- assume full duration immediately when dropped
+			return self:Duration()
+		end
+		return 0
 	end
-	if (Player.time - self.last_used) < 1 then -- assume full duration immediately when dropped
-		return self:Duration()
-	end
-	return 0
-end
-CapacitorTotem.Remains = TotemRemains
-HealingStreamTotem.Remains = TotemRemains
-LiquidMagmaTotem.Remains = TotemRemains
-PoisonCleansingTotem.Remains = TotemRemains
-SurgingTotem.Remains = TotemRemains
 
-local function WeaponEnchantRemains(self)
-	local _, remainsMH, chargesMH, idMH, _, remainsOH, chargesOH, idOH = GetWeaponEnchantInfo()
-	if idMH and idMH == self.enchant_id then
-		return remainsMH / 1000, chargesMH
+	for _, totem in next, Totem do
+		totem.Remains = TotemRemains
 	end
-	if idOH and idOH == self.enchant_id then
-		return remainsOH / 1000, chargesOH
+
+	local function WeaponImbueRemains(self)
+		local _, remainsMH, chargesMH, idMH, _, remainsOH, chargesOH, idOH = GetWeaponEnchantInfo()
+		if idMH and idMH == self.enchant_id then
+			return remainsMH / 1000, chargesMH
+		end
+		if idOH and idOH == self.enchant_id then
+			return remainsOH / 1000, chargesOH
+		end
+		return 0, 0
 	end
-	return 0, 0
+
+	for _, imbue in next, Imbue do
+		imbue.Remains = WeaponImbueRemains
+	end
 end
-FlametongueWeapon.Remains = WeaponEnchantRemains
-WindfuryWeapon.Remains = WeaponEnchantRemains
-ThunderstrikeWard.Remains = WeaponEnchantRemains
 
 function EarthElemental:Remains()
 	return max(Pet.GreaterEarthElemental:Remains(), Pet.PrimalEarthElemental:Remains())
@@ -2857,7 +2866,7 @@ end
 
 function Pet.LiquidMagmaTotem:CastLanded(unit, spellId, dstGUID, event, missType)
 	if Opt.auto_aoe and event == 'SPELL_DAMAGE' then
-		LiquidMagmaTotem:RecordTargetHit(dstGUID)
+		Totem.LiquidMagma:RecordTargetHit(dstGUID)
 	end
 end
 
@@ -2891,8 +2900,8 @@ APL[SPEC.ELEMENTAL].Main = function(self)
 	if Player.health.pct < Opt.heal then
 		if HealingSurge:Usable() and HealingSurge:Free() then
 			UseExtra(HealingSurge)
-		elseif HealingStreamTotem:Usable() and HealingStreamTotem:Down() then
-			UseExtra(HealingStreamTotem)
+		elseif Totem.HealingStream:Usable() and Totem.HealingStream:Down() then
+			UseExtra(Totem.HealingStream)
 		end
 	end
 	if Player:TimeInCombat() == 0 then
@@ -2908,34 +2917,37 @@ actions.precombat+=/stormkeeper
 ]]
 		if Skyfury:Usable() and Skyfury:Remains() < 300 then
 			UseCooldown(Skyfury)
-		elseif ImprovedFlametongueWeapon.known and FlametongueWeapon:Usable() and FlametongueWeapon:Remains() < 300 then
-			UseCooldown(FlametongueWeapon)
-		elseif ThunderstrikeWard:Usable() and ThunderstrikeWard:Remains() < 300 then
-			UseCooldown(ThunderstrikeWard)
+		elseif ImprovedFlametongueWeapon.known and Imbue.FlametongueWeapon:Usable() and Imbue.FlametongueWeapon:Remains() < 300 then
+			UseCooldown(Imbue.FlametongueWeapon)
+		elseif Imbue.ThunderstrikeWard:Usable() and Imbue.ThunderstrikeWard:Remains() < 300 then
+			UseCooldown(Imbue.ThunderstrikeWard)
 		elseif Opt.shield and LightningShield:Usable() and LightningShield:Remains() < 300 then
 			UseCooldown(LightningShield)
 		end
 		if Opt.shield and ElementalOrbit.known and EarthShield:Usable() and (EarthShield:Remains() < 150 or EarthShield:Stack() <= 3) then
 			UseExtra(EarthShield)
+		elseif Totem.HealingStream:Usable() and Totem.HealingStream:Down() then
+			UseExtra(Totem.HealingStream)
 		elseif Opt.earth and self.use_cds and EarthElemental:Usable() and not PrimalElementalist.known then
 			UseExtra(EarthElemental)
 		end
 		if self.use_cds and Stormkeeper:Usable() and Stormkeeper:Down() then
 			UseCooldown(Stormkeeper)
 		end
+
 	else
 		if Skyfury:Usable() and Skyfury:Down() then
 			UseExtra(Skyfury)
-		elseif ImprovedFlametongueWeapon.known and FlametongueWeapon:Usable() and FlametongueWeapon:Down() then
-			UseExtra(FlametongueWeapon)
-		elseif ThunderstrikeWard:Usable() and ThunderstrikeWard:Down() then
-			UseExtra(ThunderstrikeWard)
+		elseif ImprovedFlametongueWeapon.known and Imbue.FlametongueWeapon:Usable() and Imbue.FlametongueWeapon:Down() then
+			UseExtra(Imbue.FlametongueWeapon)
+		elseif Imbue.ThunderstrikeWard:Usable() and Imbue.ThunderstrikeWard:Down() then
+			UseExtra(Imbue.ThunderstrikeWard)
 		elseif Opt.shield and LightningShield:Usable() and LightningShield:Down() then
 			UseExtra(LightningShield)
 		elseif Opt.shield and ElementalOrbit.known and EarthShield:Usable() and EarthShield:Down() then
 			UseExtra(EarthShield)
-		elseif Player.health.pct < 90 and HealingStreamTotem:Usable() and Player:UnderAttack() and HealingStreamTotem:Down() then
-			UseExtra(HealingStreamTotem)
+		elseif Player.health.pct < 90 and Totem.HealingStream:Usable() and Player:UnderAttack() and Totem.HealingStream:Down() then
+			UseExtra(Totem.HealingStream)
 		elseif Player.moving and SpiritwalkersGrace:Usable() then
 			UseExtra(SpiritwalkersGrace)
 		end
@@ -3045,10 +3057,10 @@ actions.aoe+=/frost_shock,moving=1
 		) then
 			UseCooldown(Stormkeeper)
 		end
-		if LiquidMagmaTotem:Usable() and (not PrimordialWave.known or PrimordialWave:Ready(Player.gcd * 5)) and FlameShock:Ticking() < (min(6, Player.enemies) - 2) then
-			UseCooldown(LiquidMagmaTotem)
+		if Totem.LiquidMagma:Usable() and (not PrimordialWave.known or PrimordialWave:Ready(Player.gcd * 5)) and FlameShock:Ticking() < (min(6, Player.enemies) - 2) then
+			UseCooldown(Totem.LiquidMagma)
 		end
-		if PrimordialWave.known and TotemicRecall:Usable() and Player.major_cd_remains == 0 and not LiquidMagmaTotem:Ready(15) and PrimordialWave:Ready(10) and FlameShock:Ticking() < (min(6, Player.enemies) - 2) then
+		if PrimordialWave.known and TotemicRecall:Usable() and Player.major_cd_remains == 0 and not Totem.LiquidMagma:Ready(15) and PrimordialWave:Ready(10) and FlameShock:Ticking() < (min(6, Player.enemies) - 2) then
 			UseCooldown(TotemicRecall)
 		end
 	end
@@ -3058,7 +3070,7 @@ actions.aoe+=/frost_shock,moving=1
 	if self.use_cds then
 		if PrimordialWave:Usable() and (
 			(FlameShock:Ticking() <= min(Player.enemies, 6)) or
-			((not LiquidMagmaTotem.known or not LiquidMagmaTotem:Ready(15)) and (not Ascendance.known or not Ascendance:Ready(15)))
+			((not Totem.LiquidMagma.known or not Totem.LiquidMagma:Ready(15)) and (not Ascendance.known or not Ascendance:Ready(15)))
 		) then
 			UseCooldown(PrimordialWave)
 		end
@@ -3264,11 +3276,11 @@ actions.single_target+=/frost_shock,moving=1
 		) then
 			UseCooldown(Stormkeeper)
 		end
-		if LiquidMagmaTotem:Usable() and MasterOfTheElements:Down() and (not SurgeOfPower.known or SurgeOfPower:Down()) and (
+		if Totem.LiquidMagma:Usable() and MasterOfTheElements:Down() and (not SurgeOfPower.known or SurgeOfPower:Down()) and (
 			(not (AncestralSwiftness.known and Player.set_bonus.tww3 >= 2) and FlameShock:Down()) or
 			(Ascendance.known and FlameShock:Refreshable() and Ascendance:Ready(Player.gcd))
 		) then
-			UseCooldown(LiquidMagmaTotem)
+			UseCooldown(Totem.LiquidMagma)
 		end
 	end
 	if FlameShock:Usable() and FlameShock:Down() and MasterOfTheElements:Down() and (not SurgeOfPower.known or SurgeOfPower:Down()) then
@@ -3307,7 +3319,7 @@ actions.single_target+=/frost_shock,moving=1
 			return Tempest
 		end
 	end
-	if LiquidMagmaTotem:Usable() and MasterOfTheElements:Down() and (
+	if Totem.LiquidMagma:Usable() and MasterOfTheElements:Down() and (
 		(not CallOfTheAncestors.known and FlameShock:Refreshable()) or
 		(
 			Player.major_cd_remains == 0 and
@@ -3316,7 +3328,7 @@ actions.single_target+=/frost_shock,moving=1
 			Player.maelstrom.deficit <= 10
 		)
 	) then
-		UseCooldown(LiquidMagmaTotem)
+		UseCooldown(Totem.LiquidMagma)
 	end
 	if EruptingLava.known and FlameShock:Usable() and FlameShock:Refreshable() and MasterOfTheElements:Down() and (not SurgeOfPower.known or SurgeOfPower:Down()) then
 		return FlameShock
@@ -3392,8 +3404,8 @@ APL[SPEC.ENHANCEMENT].Main = function(self)
 	if Player.health.pct < Opt.heal then
 		if HealingSurge:Usable() and (MaelstromWeapon.current >= 5 or HealingSurge:Free()) then
 			UseExtra(HealingSurge)
-		elseif HealingStreamTotem:Usable() and HealingStreamTotem:Down() then
-			UseExtra(HealingStreamTotem)
+		elseif Totem.HealingStream:Usable() and Totem.HealingStream:Down() then
+			UseExtra(Totem.HealingStream)
 		end
 	end
 	if Player:TimeInCombat() == 0 then
@@ -3408,31 +3420,33 @@ actions.precombat+=/snapshot_stats
 ]]
 		if Skyfury:Usable() and Skyfury:Remains() < 300 then
 			UseCooldown(Skyfury)
-		elseif WindfuryWeapon:Usable() and WindfuryWeapon:Remains() < 300 then
-			UseCooldown(WindfuryWeapon)
-		elseif FlametongueWeapon:Usable() and FlametongueWeapon:Remains() < 300 then
-			UseCooldown(FlametongueWeapon)
+		elseif Imbue.WindfuryWeapon:Usable() and Imbue.WindfuryWeapon:Remains() < 300 then
+			UseCooldown(Imbue.WindfuryWeapon)
+		elseif Imbue.FlametongueWeapon:Usable() and Imbue.FlametongueWeapon:Remains() < 300 then
+			UseCooldown(Imbue.FlametongueWeapon)
 		elseif Opt.shield and LightningShield:Usable() and LightningShield:Remains() < 300 then
 			UseCooldown(LightningShield)
 		end
 		if Opt.shield and ElementalOrbit.known and EarthShield:Usable() and (EarthShield:Remains() < 150 or EarthShield:Stack() <= 3) then
 			UseExtra(EarthShield)
+		elseif Totem.HealingStream:Usable() and Totem.HealingStream:Down() then
+			UseExtra(Totem.HealingStream)
 		elseif Opt.earth and self.use_cds and EarthElemental:Usable() and not PrimalElementalist.known then
 			UseExtra(EarthElemental)
 		end
 	else
 		if Skyfury:Usable() and Skyfury:Down() then
 			UseExtra(Skyfury)
-		elseif WindfuryWeapon:Usable() and WindfuryWeapon:Down() then
-			UseExtra(WindfuryWeapon)
-		elseif FlametongueWeapon:Usable() and FlametongueWeapon:Down() then
-			UseExtra(FlametongueWeapon)
+		elseif Imbue.WindfuryWeapon:Usable() and Imbue.WindfuryWeapon:Down() then
+			UseExtra(Imbue.WindfuryWeapon)
+		elseif Imbue.FlametongueWeapon:Usable() and Imbue.FlametongueWeapon:Down() then
+			UseExtra(Imbue.FlametongueWeapon)
 		elseif Opt.shield and LightningShield:Usable() and LightningShield:Down() then
 			UseExtra(LightningShield)
 		elseif Opt.shield and ElementalOrbit.known and EarthShield:Usable() and EarthShield:Down() then
 			UseExtra(EarthShield)
-		elseif Player.health.pct < 90 and HealingStreamTotem:Usable() and Player:UnderAttack() and HealingStreamTotem:Down() then
-			UseExtra(HealingStreamTotem)
+		elseif Player.health.pct < 90 and Totem.HealingStream:Usable() and Player:UnderAttack() and Totem.HealingStream:Down() then
+			UseExtra(Totem.HealingStream)
 		end
 	end
 --[[
@@ -3500,8 +3514,8 @@ actions.cds+=/ascendance,if=dot.flame_shock.ticking&((ti_lightning_bolt&active_e
 	if FeralSpirit:Usable() and (ElementalSpirits.known or (AlphaWolf.known and Player.enemies > 1)) then
 		return UseCooldown(FeralSpirit)
 	end
-	if SurgingTotem:Usable() then
-		return UseCooldown(SurgingTotem)
+	if Totem.Surging:Usable() then
+		return UseCooldown(Totem.Surging)
 	end
 	if Ascendance:Usable() and Player.major_cd_remains == 0 and FlameShock:Up() and (
 		not ThorimsInvocation.known or
