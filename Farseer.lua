@@ -3064,13 +3064,16 @@ actions.aoe+=/frost_shock,moving=1
 			UseCooldown(TotemicRecall)
 		end
 	end
-	if FlameShock:Usable() and FlameShock:Ticking() == 0 and ((self.use_cds and PrimordialWave.known and PrimordialWave:Ready(Player.gcd)) or Player.enemies <= 3) and (not self.use_cds or not Ascendance.known or not Ascendance:Ready(10)) then
+	if FlameShock:Usable() and FlameShock:Ticking() == 0 and Player.enemies <= 3 and (not self.use_cds or not Ascendance.known or not Ascendance:Ready(10)) then
 		return FlameShock
 	end
 	if self.use_cds then
+		if PrimordialWave.known and FlameShock:Usable() and FlameShock:Down() and not FlameShock:Max() and PrimordialWave:Ready(Player.gcd) then
+			return FlameShock
+		end
 		if PrimordialWave:Usable() and (
-			(FlameShock:Ticking() <= min(Player.enemies, 6)) or
-			((not Totem.LiquidMagma.known or not Totem.LiquidMagma:Ready(15)) and (not Ascendance.known or not Ascendance:Ready(15)))
+			FlameShock:Max() or
+			((FlameShock:Up() or not FlameShock:Ready()) and (not Totem.LiquidMagma.known or not Totem.LiquidMagma:Ready(15)) and (not Ascendance.known or not Ascendance:Ready(15)))
 		) then
 			UseCooldown(PrimordialWave)
 		end
