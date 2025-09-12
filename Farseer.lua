@@ -339,6 +339,26 @@ Player.BaseMana = {
 	656630,  771290,  905970,  1064170, 2500000, -- 80
 }
 
+-- list of trinket item IDs that provide buffs when used
+Player.buff_trinkets = {
+	[155947] = true, -- Living Flame
+	[156000] = true, -- Wrathstone
+	[156021] = true, -- Energy Siphon
+	[156187] = true, -- Scale of Fates
+	[178809] = true, -- Soulletting Ruby
+	[178826] = true, -- Sunblood Amethyst
+	[219308] = true, -- Signet of the Priory
+	[219313] = true, -- Mereldar's Toll
+	[230027] = true, -- House of Cards
+	[230191] = true, -- Flarendo's Pilot Light
+	[240171] = true, -- Observer's Soul Fetters
+	[242396] = true, -- Unyielding Netherprism
+	[242402] = true, -- Araz's Ritual Forge
+	[242494] = true, -- Lily of the Eternal Weave
+	[246344] = true, -- Cursed Stone Idol
+	[246945] = true, -- Incorporeal Essence-Gorger
+}
+
 -- current pet information (used only to store summoned pets for shamans)
 local Pet = {}
 
@@ -1702,6 +1722,16 @@ function InventoryItem:Cooldown()
 	return max(0, duration - (Player.ctime - start) - (self.off_gcd and 0 or Player.execute_remains))
 end
 
+function InventoryItem:CooldownDuration()
+	local start, duration, enable
+	if self.equip_slot then
+		start, duration, enable = GetInventoryItemCooldown('player', self.equip_slot)
+	else
+		start, duration, enable = GetItemCooldown(self.itemId)
+	end
+	return enable == 1 and duration or 0
+end
+
 function InventoryItem:Ready(seconds)
 	return self:Cooldown() <= (seconds or 0)
 end
@@ -2895,7 +2925,7 @@ APL[SPEC.NONE].Main = function(self)
 end
 
 APL[SPEC.ELEMENTAL].Main = function(self)
-	self.cds_active = Player.major_cd_remains > 6 or (FireElemental.known and FireElemental:Up()) or (StormElemental.known and StormElemental:Up())
+	self.cds_active = Player.major_cd_remains > 8 or (FireElemental.known and FireElemental:Up()) or (StormElemental.known and StormElemental:Up())
 	self.use_cds = Opt.cooldown and (self.cds_active or Target.boss or Target.player or (not Opt.boss_only and Target.timeToDie > Opt.cd_ttd))
 	if Player.health.pct < Opt.heal then
 		if HealingSurge:Usable() and HealingSurge:Free() then
@@ -2973,19 +3003,10 @@ actions+=/run_action_list,name=aoe,if=spell_targets.chain_lightning>=2
 actions+=/run_action_list,name=single_target
 ]]
 	if self.use_cds then
-		if Opt.trinket and (
-			Player.major_cd_remains > 12 or
-			(Target.boss and (
-				Target.timeToDie < 21 or
-				(Target.timeToDie < 45 and (
-					(Ascendance.known and Ascendance:Ready(5)) or
-					(Stormkeeper.known and Stormkeeper:Ready(5) and (not Ascendance.known or not Ascendance:Ready(15)))
-				))
-			))
-		) then
-			if Trinket1:Usable() then
+		if Opt.trinket then
+			if Trinket1:Usable() and self:trinket_condition(Trinket1, Trinket2) then
 				UseCooldown(Trinket1)
-			elseif Trinket2:Usable() then
+			elseif Trinket2:Usable() and self:trinket_condition(Trinket2, Trinket1) then
 				UseCooldown(Trinket2)
 			end
 		end
@@ -2997,6 +3018,24 @@ actions+=/run_action_list,name=single_target
 		return self:aoe()
 	end
 	return self:single_target()
+end
+
+APL[SPEC.ELEMENTAL].trinket_condition = function(self, item1, item2)
+	if Player.buff_trinkets[item1.itemId] then
+		return (
+			Player.major_cd_remains > 12 or
+			((not Ascendance.known or not Ascendance:Ready(item1:CooldownDuration() - 5)) and (Player.enemies >= 2 or not PrimordialWave.known or not PrimordialWave:Ready(25))) or
+			(Target.boss and (
+				Target.timeToDie < 21 or
+				(Target.timeToDie < 45 and (
+					(Ascendance.known and Ascendance:Ready(5)) or
+					(Stormkeeper.known and Stormkeeper:Ready(5) and (not Ascendance.known or not Ascendance:Ready(15)))
+				))
+			))
+		)
+	else
+		return Player.major_cd_remains == 0 and not Ascendance:Ready(20)
+	end
 end
 
 APL[SPEC.ELEMENTAL].precombat_variables = function(self)
